@@ -81,7 +81,7 @@ export function useClientPacks(clientId: string | null): UseClientPacksReturn {
       },
       (err) => {
         console.error('Error fetching packs:', err);
-        setError('Erro ao carregar pacotes');
+        setError('Erro ao carregar ciclos');
         setLoading(false);
       }
     );
@@ -109,7 +109,7 @@ export function useClientPacks(clientId: string | null): UseClientPacksReturn {
       return docRef.id;
     } catch (err) {
       console.error('Error adding pack:', err);
-      throw new Error('Erro ao adicionar pacote');
+      throw new Error('Erro ao adicionar ciclo');
     }
   };
 
@@ -158,7 +158,7 @@ export function useClientPacks(clientId: string | null): UseClientPacksReturn {
       await updateDoc(packRef, updateData);
     } catch (err) {
       console.error('Error updating pack:', err);
-      throw new Error('Erro ao atualizar pacote');
+      throw new Error('Erro ao atualizar ciclo');
     }
   };
 
@@ -171,7 +171,7 @@ export function useClientPacks(clientId: string | null): UseClientPacksReturn {
       });
     } catch (err) {
       console.error('Error closing pack:', err);
-      throw new Error('Erro ao encerrar pacote');
+      throw new Error('Erro ao encerrar ciclo');
     }
   };
 
@@ -181,7 +181,7 @@ export function useClientPacks(clientId: string | null): UseClientPacksReturn {
       await deleteDoc(packRef);
     } catch (err) {
       console.error('Error deleting pack:', err);
-      throw new Error('Erro ao excluir pacote');
+      throw new Error('Erro ao excluir ciclo');
     }
   };
 

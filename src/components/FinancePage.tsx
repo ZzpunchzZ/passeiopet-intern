@@ -234,21 +234,21 @@ export function FinancePage() {
                   icon={<DollarSign className="w-5 h-5" />}
                   label="Recebido (Pagos)"
                   value={formatCurrency(stats.totalRevenue)}
-                  subValue={`${stats.paidPacks} pacotes`}
+                  subValue={`${stats.paidPacks} ciclos`}
                   color="emerald"
                 />
                 <StatsCard
                   icon={<TrendingUp className="w-5 h-5" />}
                   label="Previsão (Ativos)"
                   value={formatCurrency(stats.forecastRevenue)}
-                  subValue={`${stats.activePacks} pacotes ativos`}
+                  subValue={`${stats.activePacks} ciclos ativos`}
                   color="blue"
                 />
                 <StatsCard
                   icon={<AlertCircle className="w-5 h-5" />}
                   label="Pendente"
                   value={formatCurrency(stats.pendingRevenue)}
-                  subValue={`${stats.pendingPacks} pacotes`}
+                  subValue={`${stats.pendingPacks} ciclos`}
                   color="red"
                 />
                 <StatsCard
@@ -371,11 +371,11 @@ export function FinancePage() {
             {/* All Active Packs */}
             <section>
               <h2 className="text-lg font-bold text-gray-900 mb-3">
-                Todos os Pacotes Ativos ({packs.length})
+                Todos os Ciclos Ativos ({packs.length})
               </h2>
               {packs.length === 0 ? (
                 <div className="bg-white rounded-2xl border border-gray-100 p-8 text-center">
-                  <p className="text-gray-500">Nenhum pacote ativo no momento</p>
+                  <p className="text-gray-500">Nenhum ciclo ativo no momento</p>
                 </div>
               ) : (
                 <div className="space-y-3">

@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import {
-  Calendar,
   Plus,
   Clock,
   Check,
@@ -11,12 +10,14 @@ import {
   Sun,
   MapPin,
   ExternalLink,
+  Repeat,
 } from 'lucide-react';
 import { useSchedule } from '../hooks/useSchedule';
 import { useClients } from '../hooks/useClients';
 import { useClientPacks } from '../hooks/useClientPacks';
 import { Drawer, ConfirmDialog } from './ui/Modal';
-import { Button, Select, Input, EmptyState, Card, Skeleton } from './ui/FormElements';
+import { Button, Select, Input, Card, Skeleton } from './ui/FormElements';
+import { PetAvatar } from './ui/PetAvatar';
 import type { ScheduledServiceWithClient, OperationType, Client } from '../types';
 
 // Operation type options
@@ -30,6 +31,51 @@ const OPERATION_OPTIONS: {
   { type: 'partial', label: 'Parcial', icon: Clock },
 ];
 
+// Time slots for scheduling
+const TIME_SLOTS = [
+  { value: '06:50-07:20', label: '06h50–07h20' },
+  { value: '07:30-08:30', label: '07h30–08h30' },
+  { value: '09:00-10:00', label: '09h00–10h00' },
+  { value: '10:30-11:30', label: '10h30–11h30' },
+  { value: '14:30-15:30', label: '14h30–15h30' },
+  { value: '16:00-17:00', label: '16h00–17h00' },
+  { value: '17:30-18:30', label: '17h30–18h30' },
+];
+
+// Helper to format slot for display
+function formatTimeSlot(slot: string): string {
+  const found = TIME_SLOTS.find(s => s.value === slot);
+  return found ? found.label : slot || 'Sem horário';
+}
+
+// Empty Slot Card Component
+interface EmptySlotCardProps {
+  slot: { value: string; label: string };
+  onSchedule: (slot: string) => void;
+}
+
+function EmptySlotCard({ slot, onSchedule }: EmptySlotCardProps) {
+  return (
+    <div className="flex items-center gap-4 p-3 bg-gray-50 border border-dashed border-gray-200 rounded-2xl">
+      <div className="flex flex-col items-center justify-center min-w-20 h-14 px-2 rounded-xl bg-gray-100">
+        <span className="text-sm font-medium text-gray-400">
+          {slot.label}
+        </span>
+      </div>
+      <div className="flex-1">
+        <span className="text-sm italic text-gray-400">vago</span>
+      </div>
+      <button
+        onClick={() => onSchedule(slot.value)}
+        className="p-2 rounded-xl bg-emerald-100 text-emerald-600 hover:bg-emerald-200 transition-colors"
+        title="Agendar neste horário"
+      >
+        <Plus className="w-5 h-5" />
+      </button>
+    </div>
+  );
+}
+
 // Helper to format operation type label
 function formatOperationType(type: OperationType): string {
   const labels: Record<OperationType, string> = {
@@ -39,6 +85,38 @@ function formatOperationType(type: OperationType): string {
   };
   return labels[type] || type;
 }
+
+// Helper to check if operation is Pet Sitter type
+function isPetSitter(type: OperationType): boolean {
+  return type === 'full_day' || type === 'partial';
+}
+
+// Service type badge component
+function ServiceTypeBadge({ type }: { type: OperationType }) {
+  const isSitter = isPetSitter(type);
+  return (
+    <span
+      className={`px-2 py-0.5 text-[10px] font-semibold rounded-full ${
+        isSitter
+          ? 'bg-purple-100 text-purple-700'
+          : 'bg-blue-100 text-blue-700'
+      }`}
+    >
+      {isSitter ? '🏠 Sitter' : '🦮 Passeio'}
+    </span>
+  );
+}
+
+// Dias da semana para recorrência
+const WEEKDAYS = [
+  { value: 0, label: 'Dom', fullLabel: 'Domingo' },
+  { value: 1, label: 'Seg', fullLabel: 'Segunda' },
+  { value: 2, label: 'Ter', fullLabel: 'Terça' },
+  { value: 3, label: 'Qua', fullLabel: 'Quarta' },
+  { value: 4, label: 'Qui', fullLabel: 'Quinta' },
+  { value: 5, label: 'Sex', fullLabel: 'Sexta' },
+  { value: 6, label: 'Sáb', fullLabel: 'Sábado' },
+];
 
 // Schedule Form Component
 interface ScheduleFormProps {
@@ -50,21 +128,32 @@ interface ScheduleFormProps {
     scheduledTime: string;
     type: OperationType;
     notes?: string;
+    isExtra?: boolean;
   }) => Promise<void>;
   onClose: () => void;
   isLoading: boolean;
+  initialDate?: string;
+  initialSlot?: string;
 }
 
-function ScheduleForm({ clients, onSubmit, onClose, isLoading }: ScheduleFormProps) {
+function ScheduleForm({ clients, onSubmit, onClose, isLoading, initialDate, initialSlot }: ScheduleFormProps) {
   const today = new Date().toISOString().split('T')[0];
   const [formData, setFormData] = useState({
     clientId: '',
-    scheduledDate: today,
-    scheduledTime: '09:00',
+    scheduledDate: initialDate || today,
+    scheduledTime: initialSlot || '',
     type: 'walk' as OperationType,
     notes: '',
+    isExtra: false,
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
+  
+  // Estados para recorrência
+  const [isRecurring, setIsRecurring] = useState(false);
+  const [selectedWeekdays, setSelectedWeekdays] = useState<number[]>([]);
+  const [recurrenceEndDate, setRecurrenceEndDate] = useState('');
+  const [isSubmittingRecurrence, setIsSubmittingRecurrence] = useState(false);
+  const [recurrenceProgress, setRecurrenceProgress] = useState({ current: 0, total: 0 });
 
   // Get packs for selected client
   const { packs } = useClientPacks(formData.clientId);
@@ -74,27 +163,88 @@ function ScheduleForm({ clients, onSubmit, onClose, isLoading }: ScheduleFormPro
     const newErrors: Record<string, string> = {};
     if (!formData.clientId) newErrors.clientId = 'Selecione um cliente';
     if (!formData.scheduledDate) newErrors.scheduledDate = 'Data é obrigatória';
-    if (!formData.scheduledTime) newErrors.scheduledTime = 'Horário é obrigatório';
+    if (isRecurring) {
+      if (selectedWeekdays.length === 0) newErrors.weekdays = 'Selecione pelo menos um dia da semana';
+      if (!recurrenceEndDate) newErrors.endDate = 'Data final é obrigatória';
+      if (recurrenceEndDate && recurrenceEndDate <= formData.scheduledDate) {
+        newErrors.endDate = 'Data final deve ser posterior à data inicial';
+      }
+    }
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
+  };
+
+  // Função para gerar datas de recorrência
+  const generateRecurringDates = (): Date[] => {
+    const dates: Date[] = [];
+    const [startYear, startMonth, startDay] = formData.scheduledDate.split('-').map(Number);
+    const [endYear, endMonth, endDay] = recurrenceEndDate.split('-').map(Number);
+    
+    const startDate = new Date(startYear, startMonth - 1, startDay);
+    const endDate = new Date(endYear, endMonth - 1, endDay);
+    
+    const currentDate = new Date(startDate);
+    
+    while (currentDate <= endDate) {
+      if (selectedWeekdays.includes(currentDate.getDay())) {
+        dates.push(new Date(currentDate.getFullYear(), currentDate.getMonth(), currentDate.getDate(), 12, 0, 0));
+      }
+      currentDate.setDate(currentDate.getDate() + 1);
+    }
+    
+    return dates;
+  };
+
+  // Toggle de dia da semana
+  const toggleWeekday = (day: number) => {
+    setSelectedWeekdays(prev => 
+      prev.includes(day) 
+        ? prev.filter(d => d !== day)
+        : [...prev, day].sort()
+    );
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!validate()) return;
 
-    // Parse date correctly to avoid timezone issues
-    const [year, month, day] = formData.scheduledDate.split('-').map(Number);
-    const scheduledDate = new Date(year, month - 1, day, 12, 0, 0); // Set to noon to avoid timezone issues
-    
-    await onSubmit({
-      clientId: formData.clientId,
-      packId: activePacks.length > 0 ? activePacks[0].id : undefined,
-      scheduledDate,
-      scheduledTime: formData.scheduledTime,
-      type: formData.type,
-      notes: formData.notes,
-    });
+    if (isRecurring) {
+      // Criar múltiplos agendamentos para recorrência
+      const dates = generateRecurringDates();
+      setIsSubmittingRecurrence(true);
+      setRecurrenceProgress({ current: 0, total: dates.length });
+      
+      try {
+        for (let i = 0; i < dates.length; i++) {
+          await onSubmit({
+            clientId: formData.clientId,
+            packId: activePacks.length > 0 ? activePacks[0].id : undefined,
+            scheduledDate: dates[i],
+            scheduledTime: formData.scheduledTime,
+            type: formData.type,
+            notes: formData.notes,
+            isExtra: formData.isExtra,
+          });
+          setRecurrenceProgress({ current: i + 1, total: dates.length });
+        }
+      } finally {
+        setIsSubmittingRecurrence(false);
+      }
+    } else {
+      // Parse date correctly to avoid timezone issues
+      const [year, month, day] = formData.scheduledDate.split('-').map(Number);
+      const scheduledDate = new Date(year, month - 1, day, 12, 0, 0); // Set to noon to avoid timezone issues
+      
+      await onSubmit({
+        clientId: formData.clientId,
+        packId: activePacks.length > 0 ? activePacks[0].id : undefined,
+        scheduledDate,
+        scheduledTime: formData.scheduledTime,
+        type: formData.type,
+        notes: formData.notes,
+        isExtra: formData.isExtra,
+      });
+    }
   };
 
   const clientOptions = clients.map((c) => ({
@@ -115,7 +265,7 @@ function ScheduleForm({ clients, onSubmit, onClose, isLoading }: ScheduleFormPro
       {formData.clientId && activePacks.length > 0 && (
         <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-3">
           <p className="text-sm text-emerald-800">
-            Pacote ativo: {activePacks[0].totalCredits - activePacks[0].usedCredits} créditos restantes
+            Ciclo ativo: {activePacks[0].totalCredits - activePacks[0].usedCredits} créditos restantes
           </p>
         </div>
       )}
@@ -123,7 +273,7 @@ function ScheduleForm({ clients, onSubmit, onClose, isLoading }: ScheduleFormPro
       {formData.clientId && activePacks.length === 0 && (
         <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-3">
           <p className="text-sm text-yellow-800">
-            ⚠️ Cliente sem pacote ativo. O serviço será registrado como avulso.
+            ⚠️ Cliente sem ciclo ativo. O serviço será registrado como avulso.
           </p>
         </div>
       )}
@@ -136,12 +286,14 @@ function ScheduleForm({ clients, onSubmit, onClose, isLoading }: ScheduleFormPro
           onChange={(e) => setFormData({ ...formData, scheduledDate: e.target.value })}
           error={errors.scheduledDate}
         />
-        <Input
-          label="Horário"
-          type="time"
+        <Select
+          label="Horário (opcional)"
           value={formData.scheduledTime}
           onChange={(e) => setFormData({ ...formData, scheduledTime: e.target.value })}
-          error={errors.scheduledTime}
+          options={[
+            { value: '', label: 'Sem horário' },
+            ...TIME_SLOTS.map(slot => ({ value: slot.value, label: slot.label }))
+          ]}
         />
       </div>
 
@@ -159,12 +311,131 @@ function ScheduleForm({ clients, onSubmit, onClose, isLoading }: ScheduleFormPro
         onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
       />
 
+      {/* Checkbox Extra - apenas se tiver ciclo ativo */}
+      {formData.clientId && activePacks.length > 0 && (
+        <label className="flex items-center gap-3 p-3 rounded-xl border-2 border-orange-200 bg-orange-50 cursor-pointer hover:border-orange-300 transition-all">
+          <input
+            type="checkbox"
+            checked={formData.isExtra}
+            onChange={(e) => setFormData({ ...formData, isExtra: e.target.checked })}
+            className="w-5 h-5 rounded border-orange-300 text-orange-500 focus:ring-orange-500"
+          />
+          <div className="flex-1">
+            <span className="font-medium text-orange-800">Passeio Extra</span>
+            <p className="text-xs text-orange-600 mt-0.5">
+              Serviço adicional fora do pacote. Será cobrado no próximo ciclo.
+            </p>
+          </div>
+          <span className="px-2 py-1 bg-orange-200 text-orange-700 text-xs font-bold rounded-full">
+            EXTRA
+          </span>
+        </label>
+      )}
+
+      {/* Toggle de Recorrência */}
+      <div className="border-t border-gray-200 pt-4 mt-4">
+        <button
+          type="button"
+          onClick={() => setIsRecurring(!isRecurring)}
+          className={`flex items-center gap-2 w-full p-3 rounded-xl border-2 transition-all ${
+            isRecurring
+              ? 'border-emerald-500 bg-emerald-50'
+              : 'border-gray-200 bg-gray-50 hover:border-gray-300'
+          }`}
+        >
+          <Repeat className={`w-5 h-5 ${isRecurring ? 'text-emerald-600' : 'text-gray-400'}`} />
+          <span className={`font-medium ${isRecurring ? 'text-emerald-700' : 'text-gray-600'}`}>
+            Agendamento Recorrente
+          </span>
+          <div
+            className={`ml-auto w-10 h-6 rounded-full transition-colors ${
+              isRecurring ? 'bg-emerald-500' : 'bg-gray-300'
+            }`}
+          >
+            <div
+              className={`w-5 h-5 bg-white rounded-full shadow transform transition-transform mt-0.5 ${
+                isRecurring ? 'translate-x-4.5 ml-0.5' : 'translate-x-0.5'
+              }`}
+            />
+          </div>
+        </button>
+
+        {/* Configurações de Recorrência */}
+        {isRecurring && (
+          <div className="mt-4 space-y-4 p-4 bg-gray-50 rounded-xl border border-gray-200">
+            {/* Dias da semana */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Dias da semana
+              </label>
+              <div className="flex gap-1">
+                {WEEKDAYS.map((day) => (
+                  <button
+                    key={day.value}
+                    type="button"
+                    onClick={() => toggleWeekday(day.value)}
+                    className={`flex-1 py-2 px-1 text-xs font-medium rounded-lg transition-all ${
+                      selectedWeekdays.includes(day.value)
+                        ? 'bg-emerald-500 text-white'
+                        : 'bg-white border border-gray-200 text-gray-600 hover:border-emerald-300'
+                    }`}
+                    title={day.fullLabel}
+                  >
+                    {day.label}
+                  </button>
+                ))}
+              </div>
+              {errors.weekdays && (
+                <p className="text-xs text-red-500 mt-1">{errors.weekdays}</p>
+              )}
+            </div>
+
+            {/* Data final */}
+            <Input
+              label="Repetir até"
+              type="date"
+              value={recurrenceEndDate}
+              onChange={(e) => setRecurrenceEndDate(e.target.value)}
+              error={errors.endDate}
+              min={formData.scheduledDate}
+            />
+
+            {/* Preview de agendamentos */}
+            {selectedWeekdays.length > 0 && recurrenceEndDate && recurrenceEndDate > formData.scheduledDate && (
+              <div className="bg-blue-50 border border-blue-200 rounded-xl p-3">
+                <p className="text-sm text-blue-800">
+                  📅 Serão criados <strong>{generateRecurringDates().length}</strong> agendamentos
+                </p>
+                <p className="text-xs text-blue-600 mt-1">
+                  {selectedWeekdays.map(d => WEEKDAYS.find(w => w.value === d)?.fullLabel).join(', ')}
+                </p>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+
+      {/* Progresso de criação de recorrência */}
+      {isSubmittingRecurrence && (
+        <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-3">
+          <p className="text-sm text-emerald-800 font-medium">
+            Criando agendamentos... {recurrenceProgress.current}/{recurrenceProgress.total}
+          </p>
+          <div className="mt-2 h-2 bg-emerald-200 rounded-full overflow-hidden">
+            <div
+              className="h-full bg-emerald-500 transition-all duration-300"
+              style={{ width: `${(recurrenceProgress.current / recurrenceProgress.total) * 100}%` }}
+            />
+          </div>
+        </div>
+      )}
+
       <div className="flex gap-3 pt-4">
-        <Button type="button" variant="secondary" onClick={onClose} className="flex-1">
+        <Button type="button" variant="secondary" onClick={onClose} className="flex-1" disabled={isSubmittingRecurrence}>
           Cancelar
         </Button>
-        <Button type="submit" isLoading={isLoading} className="flex-1">
-          Agendar
+        <Button type="submit" isLoading={isLoading || isSubmittingRecurrence} className="flex-1">
+          {isRecurring ? 'Criar Agendamentos' : 'Agendar'}
         </Button>
       </div>
     </form>
@@ -175,49 +446,85 @@ function ScheduleForm({ clients, onSubmit, onClose, isLoading }: ScheduleFormPro
 interface ServiceCardProps {
   service: ScheduledServiceWithClient;
   onComplete: () => void;
-  onCancel: () => void;
+  onNotDone: () => void;
   isSubmitting: boolean;
 }
 
-function ServiceCard({ service, onComplete, onCancel, isSubmitting }: ServiceCardProps) {
+function ServiceCard({ service, onComplete, onNotDone, isSubmitting }: ServiceCardProps) {
   const isCompleted = service.status === 'completed';
+  const isNotDone = service.status === 'not_done';
+  const isPending = service.status === 'scheduled';
+
+  // Determine card styling based on status
+  const getCardClass = () => {
+    if (isCompleted) return 'bg-emerald-50 border-emerald-200 opacity-75';
+    if (isNotDone) return 'bg-red-50 border-red-200 opacity-75';
+    return '';
+  };
+
+  // Determine time slot styling based on status
+  const getTimeSlotClass = () => {
+    if (isCompleted) return 'bg-emerald-100';
+    if (isNotDone) return 'bg-red-100';
+    return 'bg-blue-100';
+  };
+
+  const getTimeTextClass = () => {
+    if (isCompleted) return 'text-emerald-700';
+    if (isNotDone) return 'text-red-700';
+    return 'text-blue-700';
+  };
+
+  const getSubTextClass = () => {
+    if (isCompleted) return 'text-emerald-600';
+    if (isNotDone) return 'text-red-600';
+    return 'text-blue-600';
+  };
 
   return (
-    <Card
-      className={`transition-all ${
-        isCompleted ? 'bg-emerald-50 border-emerald-200 opacity-75' : ''
-      }`}
-    >
-      <div className="flex items-start gap-4">
-        {/* Time badge */}
+    <Card className={`transition-all ${getCardClass()}`}>
+      <div className="flex items-start gap-3">
+        {/* Pet avatar */}
+        <PetAvatar
+          photoUrl={service.client.photoUrl}
+          petName={service.client.petName}
+          size="sm"
+        />
+
+        {/* Time slot badge */}
         <div
-          className={`flex flex-col items-center justify-center w-16 h-16 rounded-xl ${
-            isCompleted ? 'bg-emerald-100' : 'bg-blue-100'
-          }`}
+          className={`flex flex-col items-center justify-center min-w-16 h-10 px-2 rounded-xl ${getTimeSlotClass()}`}
         >
-          <span
-            className={`text-lg font-bold ${
-              isCompleted ? 'text-emerald-700' : 'text-blue-700'
-            }`}
-          >
-            {service.scheduledTime}
+          <span className={`text-xs font-bold text-center ${getTimeTextClass()}`}>
+            {formatTimeSlot(service.scheduledTime)}
           </span>
-          <span
-            className={`text-xs ${isCompleted ? 'text-emerald-600' : 'text-blue-600'}`}
-          >
+          <span className={`text-[10px] ${getSubTextClass()}`}>
             {formatOperationType(service.type)}
           </span>
         </div>
 
         {/* Service info */}
         <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
             <h3 className="text-lg font-bold text-gray-900 truncate">
               {service.client.petName}
             </h3>
+            <ServiceTypeBadge type={service.type} />
+            {service.isExtra && (
+              <span className="px-2 py-0.5 bg-orange-500 text-white text-xs font-bold rounded-full">
+                EXTRA
+              </span>
+            )}
             {isCompleted && (
-              <span className="px-2 py-0.5 bg-emerald-500 text-white text-xs font-medium rounded-full">
-                Feito
+              <span className="px-2 py-0.5 bg-emerald-500 text-white text-xs font-medium rounded-full flex items-center gap-1">
+                <Check className="w-3 h-3" />
+                OK
+              </span>
+            )}
+            {isNotDone && (
+              <span className="px-2 py-0.5 bg-red-500 text-white text-xs font-medium rounded-full flex items-center gap-1">
+                <X className="w-3 h-3" />
+                Não Realizado
               </span>
             )}
           </div>
@@ -233,13 +540,14 @@ function ServiceCard({ service, onComplete, onCancel, isSubmitting }: ServiceCar
           )}
         </div>
 
-        {/* Action buttons */}
-        {!isCompleted && (
+        {/* Action buttons - only show for pending services */}
+        {isPending && (
           <div className="flex gap-2">
             <button
-              onClick={onCancel}
+              onClick={onNotDone}
               disabled={isSubmitting}
-              className="p-2 rounded-xl bg-gray-100 text-gray-600 hover:bg-gray-200 transition-colors disabled:opacity-50"
+              className="p-2 rounded-xl bg-red-100 text-red-600 hover:bg-red-200 transition-colors disabled:opacity-50"
+              title="Marcar como não realizado"
             >
               <X className="w-5 h-5" />
             </button>
@@ -247,6 +555,7 @@ function ServiceCard({ service, onComplete, onCancel, isSubmitting }: ServiceCar
               onClick={onComplete}
               disabled={isSubmitting}
               className="p-2 rounded-xl bg-emerald-500 text-white hover:bg-emerald-600 transition-colors disabled:opacity-50"
+              title="Marcar como realizado"
             >
               <Check className="w-5 h-5" />
             </button>
@@ -322,11 +631,24 @@ function isSameDay(date1: Date, date2: Date): boolean {
 // Open Google Calendar with event
 function openGoogleCalendar(service: ScheduledServiceWithClient) {
   const date = service.scheduledDate.toDate();
-  const [hours, minutes] = service.scheduledTime.split(':').map(Number);
-  date.setHours(hours, minutes, 0, 0);
+  
+  // Parse slot format (e.g., "06:50-07:20") or handle empty
+  let startHours = 9, startMinutes = 0, endHours = 10, endMinutes = 0;
+  
+  if (service.scheduledTime && service.scheduledTime.includes('-')) {
+    const [startTime, endTime] = service.scheduledTime.split('-');
+    const [sH, sM] = startTime.split(':').map(Number);
+    const [eH, eM] = endTime.split(':').map(Number);
+    startHours = sH;
+    startMinutes = sM;
+    endHours = eH;
+    endMinutes = eM;
+  }
+  
+  date.setHours(startHours, startMinutes, 0, 0);
   
   const endDate = new Date(date);
-  endDate.setHours(endDate.getHours() + 1);
+  endDate.setHours(endHours, endMinutes, 0, 0);
 
   const formatGCalDate = (d: Date) => d.toISOString().replace(/-|:|\.\d{3}/g, '');
   
@@ -349,14 +671,15 @@ export function SchedulePage() {
     error,
     addScheduledService,
     completeService,
-    cancelService,
+    markAsNotDone,
   } = useSchedule();
   const { activeClients } = useClients();
 
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [isFormOpen, setIsFormOpen] = useState(false);
+  const [preselectedSlot, setPreselectedSlot] = useState<string>('');
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [confirmCancel, setConfirmCancel] = useState<ScheduledServiceWithClient | null>(null);
+  const [confirmNotDone, setConfirmNotDone] = useState<ScheduledServiceWithClient | null>(null);
   const [confirmComplete, setConfirmComplete] = useState<ScheduledServiceWithClient | null>(null);
 
   // Filter services for selected date
@@ -368,6 +691,28 @@ export function SchedulePage() {
   // Separate pending and completed
   const pendingServices = servicesForDate.filter((s) => s.status === 'scheduled');
   const completedServices = servicesForDate.filter((s) => s.status === 'completed');
+
+  // Build slots view with all services (pending and completed) or empty
+  const slotsView = TIME_SLOTS.map((slot) => {
+    const service = servicesForDate.find((s) => s.scheduledTime === slot.value);
+    return { slot, service: service || null };
+  });
+
+  // Services without specific slot (e.g., Diária) - both pending and completed
+  const servicesWithoutSlot = servicesForDate.filter(
+    (s) => !s.scheduledTime || !TIME_SLOTS.some((slot) => slot.value === s.scheduledTime)
+  );
+
+  // Handler to open form with preselected slot
+  const handleScheduleSlot = (slotValue: string) => {
+    setPreselectedSlot(slotValue);
+    setIsFormOpen(true);
+  };
+
+  const handleOpenForm = () => {
+    setPreselectedSlot('');
+    setIsFormOpen(true);
+  };
 
   const { prev, next } = getDateRange(selectedDate);
 
@@ -403,14 +748,14 @@ export function SchedulePage() {
     }
   };
 
-  const handleCancel = async () => {
-    if (!confirmCancel) return;
+  const handleNotDone = async () => {
+    if (!confirmNotDone) return;
     setIsSubmitting(true);
     try {
-      await cancelService(confirmCancel.id);
-      setConfirmCancel(null);
+      await markAsNotDone(confirmNotDone.id);
+      setConfirmNotDone(null);
     } catch (err) {
-      alert(err instanceof Error ? err.message : 'Erro ao cancelar serviço');
+      alert(err instanceof Error ? err.message : 'Erro ao marcar como não realizado');
     } finally {
       setIsSubmitting(false);
     }
@@ -423,7 +768,7 @@ export function SchedulePage() {
         <div className="flex items-center justify-between mb-3">
           <h1 className="text-2xl font-bold text-gray-900">Agenda</h1>
           <button
-            onClick={() => setIsFormOpen(true)}
+            onClick={handleOpenForm}
             className="flex items-center gap-2 px-4 py-2 bg-emerald-500 text-white rounded-xl font-medium hover:bg-emerald-600 transition-colors"
           >
             <Plus className="w-4 h-4" />
@@ -470,48 +815,48 @@ export function SchedulePage() {
 
         {loading ? (
           <LoadingSkeleton />
-        ) : servicesForDate.length === 0 ? (
-          <EmptyState
-            icon={<Calendar className="w-10 h-10 text-gray-400" />}
-            title="Nenhum agendamento"
-            description="Não há serviços agendados para este dia"
-          />
         ) : (
           <>
-            {/* Pending services */}
-            {pendingServices.length > 0 && (
-              <section>
-                <h2 className="text-lg font-bold text-gray-900 mb-3">
-                  A Fazer ({pendingServices.length})
-                </h2>
-                <div className="space-y-3">
-                  {pendingServices.map((service) => (
+            {/* All time slots */}
+            <section>
+              <h2 className="text-lg font-bold text-gray-900 mb-3">
+                Horários do Dia
+              </h2>
+              <div className="space-y-3">
+                {slotsView.map(({ slot, service }) => (
+                  service ? (
                     <ServiceCard
                       key={service.id}
                       service={service}
                       onComplete={() => setConfirmComplete(service)}
-                      onCancel={() => setConfirmCancel(service)}
+                      onNotDone={() => setConfirmNotDone(service)}
                       isSubmitting={isSubmitting}
                     />
-                  ))}
-                </div>
-              </section>
-            )}
+                  ) : (
+                    <EmptySlotCard
+                      key={slot.value}
+                      slot={slot}
+                      onSchedule={handleScheduleSlot}
+                    />
+                  )
+                ))}
+              </div>
+            </section>
 
-            {/* Completed services */}
-            {completedServices.length > 0 && (
+            {/* Services without specific slot (e.g., Diária) */}
+            {servicesWithoutSlot.length > 0 && (
               <section>
                 <h2 className="text-lg font-bold text-gray-900 mb-3">
-                  Concluídos ({completedServices.length})
+                  Sem Horário Fixo
                 </h2>
                 <div className="space-y-3">
-                  {completedServices.map((service) => (
+                  {servicesWithoutSlot.map((service) => (
                     <ServiceCard
                       key={service.id}
                       service={service}
-                      onComplete={() => {}}
-                      onCancel={() => {}}
-                      isSubmitting={false}
+                      onComplete={() => setConfirmComplete(service)}
+                      onNotDone={() => setConfirmNotDone(service)}
+                      isSubmitting={isSubmitting}
                     />
                   ))}
                 </div>
@@ -521,7 +866,7 @@ export function SchedulePage() {
         )}
 
         {/* Google Calendar link */}
-        {servicesForDate.length > 0 && (
+        {pendingServices.length > 0 && (
           <div className="bg-white rounded-2xl border border-gray-100 p-4">
             <button
               onClick={() => {
@@ -549,17 +894,19 @@ export function SchedulePage() {
           onSubmit={handleAddService}
           onClose={() => setIsFormOpen(false)}
           isLoading={isSubmitting}
+          initialDate={selectedDate.toISOString().split('T')[0]}
+          initialSlot={preselectedSlot}
         />
       </Drawer>
 
-      {/* Cancel Confirmation */}
+      {/* Not Done Confirmation */}
       <ConfirmDialog
-        isOpen={!!confirmCancel}
-        onClose={() => setConfirmCancel(null)}
-        onConfirm={handleCancel}
-        title="Cancelar Agendamento"
-        message={`Tem certeza que deseja cancelar o agendamento de ${confirmCancel?.client.petName}?`}
-        confirmText="Cancelar Agendamento"
+        isOpen={!!confirmNotDone}
+        onClose={() => setConfirmNotDone(null)}
+        onConfirm={handleNotDone}
+        title="Marcar como Não Realizado"
+        message={`Marcar o passeio de ${confirmNotDone?.client.petName} como não realizado?`}
+        confirmText="Não Realizado"
         variant="danger"
       />
 

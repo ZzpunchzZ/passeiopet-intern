@@ -270,10 +270,10 @@ function EmptyState() {
         <Dog className="w-10 h-10 text-gray-400" />
       </div>
       <h3 className="text-lg font-semibold text-gray-900 mb-2">
-        Nenhum pacote ativo
+        Nenhum ciclo ativo
       </h3>
       <p className="text-gray-500">
-        Cadastre clientes e crie pacotes para começar
+        Cadastre clientes e crie ciclos para começar
       </p>
     </div>
   );
@@ -417,7 +417,7 @@ export function Dashboard() {
       <header className="bg-white border-b border-gray-100 px-4 py-4 sticky top-0 z-10">
         <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
         <p className="text-sm text-gray-500">
-          {packs.length} pacote{packs.length !== 1 ? 's' : ''} ativo
+          {packs.length} ciclo{packs.length !== 1 ? 's' : ''} ativo
           {packs.length !== 1 ? 's' : ''}
         </p>
       </header>
@@ -454,7 +454,7 @@ export function Dashboard() {
             <div className="grid grid-cols-2 gap-3">
               <StatsCard
                 icon={<Dog className="w-5 h-5" />}
-                label="Pacotes Ativos"
+                label="Ciclos Ativos"
                 value={packs.length}
                 color="emerald"
               />
@@ -492,7 +492,7 @@ export function Dashboard() {
 
         {/* Active Packs */}
         <section>
-          <h2 className="text-lg font-bold text-gray-900 mb-3">Pacotes Ativos</h2>
+          <h2 className="text-lg font-bold text-gray-900 mb-3">Ciclos Ativos</h2>
           {loading ? (
             <LoadingSkeleton />
           ) : packs.length === 0 ? (

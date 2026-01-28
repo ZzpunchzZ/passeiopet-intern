@@ -1,7 +1,7 @@
 import { useState } from 'react';
+import confetti from 'canvas-confetti';
 import {
   ArrowLeft,
-  Dog,
   Phone,
   MapPin,
   Edit,
@@ -9,21 +9,25 @@ import {
   RotateCcw,
   Plus,
   Package,
-  Footprints,
-  Sun,
-  Clock,
   Calendar,
   DollarSign,
   XCircle,
   Trash2,
   MoreVertical,
+  X,
+  Check,
+  Copy,
+  CheckCircle,
+  FileText,
 } from 'lucide-react';
 import { Timestamp } from 'firebase/firestore';
 import { useClientPacks } from '../hooks/useClientPacks';
 import { useOperations, formatOperationType, formatShortDate } from '../hooks/useOperations';
+import { useSchedule } from '../hooks/useSchedule';
 import { Drawer } from './ui/Modal';
 import { Input, Select, Button, Badge, Card, EmptyState, Skeleton } from './ui/FormElements';
-import type { Client, Pack, PaymentStatus, ServiceType } from '../types';
+import { PetAvatar } from './ui/PetAvatar';
+import type { Client, Pack, PaymentStatus, ServiceType, OperationType } from '../types';
 
 interface ClientDetailProps {
   client: Client;
@@ -451,20 +455,36 @@ function PackCard({ pack, onUpdatePayment, onEdit, onDelete, onClosePack, onPart
 
 // Operations History Component
 function OperationsHistory({ clientId }: { clientId: string }) {
-  const { operations, loading } = useOperations(undefined, clientId, 20);
+  const { operations, loading: operationsLoading } = useOperations(undefined, clientId, 20);
+  const { allServices, loading: servicesLoading } = useSchedule();
 
-  const getOperationIcon = (type: string) => {
-    switch (type) {
-      case 'walk':
-        return <Footprints className="w-4 h-4 text-emerald-600" />;
-      case 'full_day':
-        return <Sun className="w-4 h-4 text-orange-500" />;
-      case 'partial':
-        return <Clock className="w-4 h-4 text-blue-500" />;
-      default:
-        return <Footprints className="w-4 h-4 text-gray-400" />;
-    }
-  };
+  // Filter services that are not_done for this client
+  const notDoneServices = allServices
+    .filter((s) => s.clientId === clientId && s.status === 'not_done')
+    .slice(0, 20);
+
+  // Combine operations and not_done services into a unified list
+  type HistoryItem = 
+    | { type: 'completed'; date: Date; operationType: OperationType; weight: number; id: string }
+    | { type: 'not_done'; date: Date; operationType: OperationType; id: string };
+
+  const historyItems: HistoryItem[] = [
+    ...operations.map((op) => ({
+      type: 'completed' as const,
+      date: op.date.toDate(),
+      operationType: op.type,
+      weight: op.weight,
+      id: op.id,
+    })),
+    ...notDoneServices.map((s) => ({
+      type: 'not_done' as const,
+      date: s.scheduledDate.toDate(),
+      operationType: s.type,
+      id: s.id,
+    })),
+  ].sort((a, b) => b.date.getTime() - a.date.getTime());
+
+  const loading = operationsLoading || servicesLoading;
 
   if (loading) {
     return (
@@ -476,7 +496,7 @@ function OperationsHistory({ clientId }: { clientId: string }) {
     );
   }
 
-  if (operations.length === 0) {
+  if (historyItems.length === 0) {
     return (
       <p className="text-center text-gray-500 py-4">
         Nenhuma operação registrada ainda
@@ -484,29 +504,299 @@ function OperationsHistory({ clientId }: { clientId: string }) {
     );
   }
 
+  const completedCount = operations.length;
+  const notDoneCount = notDoneServices.length;
+
   return (
     <div className="space-y-2">
       <p className="text-sm text-gray-500 mb-2">
-        Histórico de {operations.length} operações realizadas
+        Histórico: {completedCount} realizado{completedCount !== 1 ? 's' : ''}
+        {notDoneCount > 0 && `, ${notDoneCount} não realizado${notDoneCount !== 1 ? 's' : ''}`}
       </p>
-      {operations.map((op) => (
+      {historyItems.map((item) => (
         <div
-          key={op.id}
-          className="flex items-center gap-3 p-3 bg-emerald-50 rounded-xl border border-emerald-100"
+          key={item.id}
+          className={`flex items-center gap-3 p-3 rounded-xl border ${
+            item.type === 'completed'
+              ? 'bg-emerald-50 border-emerald-100'
+              : 'bg-red-50 border-red-100'
+          }`}
         >
           <div className="w-8 h-8 rounded-full bg-white flex items-center justify-center">
-            {getOperationIcon(op.type)}
+            {item.type === 'completed' ? (
+              <Check className="w-4 h-4 text-emerald-600" />
+            ) : (
+              <X className="w-4 h-4 text-red-500" />
+            )}
           </div>
           <div className="flex-1">
             <p className="font-medium text-gray-900">
-              {formatShortDate(op.date)} - <span className="text-emerald-600">Feito</span>
+              {formatShortDate(Timestamp.fromDate(item.date))} -{' '}
+              {item.type === 'completed' ? (
+                <span className="text-emerald-600">OK</span>
+              ) : (
+                <span className="text-red-500">Não Realizado</span>
+              )}
             </p>
-            <p className="text-xs text-gray-500">{formatOperationType(op.type)}</p>
+            <p className="text-xs text-gray-500">{formatOperationType(item.operationType)}</p>
           </div>
-          <span className="text-sm text-gray-500">-{op.weight} crédito{op.weight > 1 ? 's' : ''}</span>
+          {item.type === 'completed' && (
+            <span className="text-sm text-gray-500">-{item.weight} crédito{item.weight > 1 ? 's' : ''}</span>
+          )}
         </div>
       ))}
     </div>
+  );
+}
+
+// Export History Component
+interface ExportHistoryDrawerProps {
+  client: Client;
+  packs: Pack[];
+  isOpen: boolean;
+  onClose: () => void;
+}
+
+function ExportHistoryDrawer({ client, packs, isOpen, onClose }: ExportHistoryDrawerProps) {
+  const { operations } = useOperations(undefined, client.id, 100);
+  const { allServices } = useSchedule();
+  
+  // Get date range defaults (last 30 days)
+  const today = new Date();
+  const thirtyDaysAgo = new Date(today);
+  thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+  
+  const [startDate, setStartDate] = useState(thirtyDaysAgo.toISOString().split('T')[0]);
+  const [endDate, setEndDate] = useState(today.toISOString().split('T')[0]);
+  const [copied, setCopied] = useState(false);
+  const [generatedText, setGeneratedText] = useState('');
+  const [showCelebration, setShowCelebration] = useState(false);
+
+  // Filter services for this client
+  const clientServices = allServices.filter((s) => s.clientId === client.id);
+
+  // Generate the export text
+  const generateExportText = () => {
+    const start = new Date(startDate);
+    start.setHours(0, 0, 0, 0);
+    const end = new Date(endDate);
+    end.setHours(23, 59, 59, 999);
+
+    // Combine completed operations and not_done services
+    type HistoryItem = {
+      date: Date;
+      status: 'ok' | 'not_done';
+      type: OperationType;
+      isExtra?: boolean;
+    };
+
+    const historyItems: HistoryItem[] = [
+      ...operations
+        .filter((op) => {
+          const opDate = op.date.toDate();
+          return opDate >= start && opDate <= end;
+        })
+        .map((op) => ({
+          date: op.date.toDate(),
+          status: 'ok' as const,
+          type: op.type,
+          isExtra: false,
+        })),
+      ...clientServices
+        .filter((s) => {
+          const sDate = s.scheduledDate.toDate();
+          return sDate >= start && sDate <= end && (s.status === 'completed' || s.status === 'not_done');
+        })
+        .filter((s) => s.status === 'not_done') // Only add not_done from services (completed already comes from operations)
+        .map((s) => ({
+          date: s.scheduledDate.toDate(),
+          status: 'not_done' as const,
+          type: s.type,
+          isExtra: false,
+        })),
+    ].sort((a, b) => a.date.getTime() - b.date.getTime());
+
+    // Count completed
+    const completedCount = historyItems.filter((h) => h.status === 'ok').length;
+
+    // Get active pack info
+    const activePack = packs.find((p) => p.isActive);
+    const packCredits = activePack ? activePack.totalCredits : completedCount;
+    const packValue = activePack ? formatCurrency(activePack.packageValue) : '';
+    const paymentStatus = activePack
+      ? activePack.paymentStatus === 'paid'
+        ? `Pagamento: FEITO em ${activePack.paymentDate ? formatDateDisplay(activePack.paymentDate) : 'N/A'}`
+        : activePack.paymentStatus === 'partial'
+        ? `Pagamento: PARCIAL (${formatCurrency(activePack.paidAmount || 0)})`
+        : 'Pagamento: PENDENTE'
+      : '';
+
+    // Format service type info
+    const serviceTypeLabel = activePack?.serviceType === 'sitter' ? 'Pet Sitter' : 'Passeio';
+    const frequencyInfo = activePack
+      ? `${packCredits} ${activePack.serviceType === 'walk' ? 'passeios' : 'diárias'}`
+      : `${completedCount} serviços`;
+
+    // Format the text like in the image
+    let text = `🎉 Completamos mais um ciclo de ${serviceTypeLabel.toLowerCase()}s!\n\n`;
+    text += `🐕 : ${client.petName}\n`;
+    text += `📅 : ${frequencyInfo}\n`;
+    text += `⏱️ : 1h por passeio\n`;
+    if (packValue) text += `💰 : ${packValue}\n`;
+    if (paymentStatus) text += `${paymentStatus}\n`;
+    text += `\n`;
+    text += `Rolês realizados:\n\n`;
+
+    historyItems.forEach((item) => {
+      const dateStr = new Intl.DateTimeFormat('pt-BR', {
+        day: '2-digit',
+        month: '2-digit',
+      }).format(item.date);
+
+      if (item.status === 'ok') {
+        text += `• ${dateStr} — ✅ OK${item.isExtra ? ' (extra)' : ''}\n`;
+      } else {
+        text += `• ${dateStr} — ❌ NÃO REALIZADO\n`;
+      }
+    });
+
+    text += `\n`;
+    text += `Total: ${completedCount} / ${packCredits}\n\n`;
+    text += `Vamos pra mais um mês? 🐾`;
+
+    setGeneratedText(text);
+    return text;
+  };
+
+  const handleCopy = async () => {
+    const text = generatedText || generateExportText();
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch (err) {
+      // Fallback for older browsers
+      const textArea = document.createElement('textarea');
+      textArea.value = text;
+      document.body.appendChild(textArea);
+      textArea.select();
+      document.execCommand('copy');
+      document.body.removeChild(textArea);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    }
+  };
+
+  // Fire confetti celebration
+  const fireCelebration = () => {
+    // Fire confetti from both sides
+    const count = 200;
+    const defaults = {
+      origin: { y: 0.7 },
+      zIndex: 9999,
+    };
+
+    function fire(particleRatio: number, opts: confetti.Options) {
+      confetti({
+        ...defaults,
+        ...opts,
+        particleCount: Math.floor(count * particleRatio),
+      });
+    }
+
+    // Fire multiple bursts
+    fire(0.25, { spread: 26, startVelocity: 55 });
+    fire(0.2, { spread: 60 });
+    fire(0.35, { spread: 100, decay: 0.91, scalar: 0.8 });
+    fire(0.1, { spread: 120, startVelocity: 25, decay: 0.92, scalar: 1.2 });
+    fire(0.1, { spread: 120, startVelocity: 45 });
+
+    // Fire from left side
+    confetti({
+      particleCount: 50,
+      angle: 60,
+      spread: 55,
+      origin: { x: 0, y: 0.6 },
+      zIndex: 9999,
+    });
+
+    // Fire from right side
+    confetti({
+      particleCount: 50,
+      angle: 120,
+      spread: 55,
+      origin: { x: 1, y: 0.6 },
+      zIndex: 9999,
+    });
+  };
+
+  // Generate text when dates change
+  const handleGenerate = () => {
+    generateExportText();
+    setShowCelebration(true);
+    fireCelebration();
+    
+    // Hide celebration after animation
+    setTimeout(() => setShowCelebration(false), 3000);
+  };
+
+  return (
+    <Drawer isOpen={isOpen} onClose={onClose} title="Exportar Histórico" subtitle={`Histórico de ${client.petName}`}>
+      <div className="space-y-4">
+        {/* Date Range Selection */}
+        <div className="grid grid-cols-2 gap-3">
+          <Input
+            label="Data Início"
+            type="date"
+            value={startDate}
+            onChange={(e) => setStartDate(e.target.value)}
+          />
+          <Input
+            label="Data Fim"
+            type="date"
+            value={endDate}
+            onChange={(e) => setEndDate(e.target.value)}
+          />
+        </div>
+
+        <Button onClick={handleGenerate} className="w-full" variant="secondary">
+          🎉 Gerar Mensagem
+        </Button>
+
+        {/* Celebration GIF */}
+        {showCelebration && (
+          <div className="flex flex-col items-center justify-center py-4 animate-bounce">
+            <img
+              src="https://media.giphy.com/media/mCRJDo24UvJMA/giphy.gif"
+              alt="Cachorrinho correndo"
+              className="w-32 h-32 rounded-xl object-cover"
+            />
+            <p className="text-lg font-bold text-emerald-600 mt-2 animate-pulse">
+              🎉 Ciclo completo! 🐕
+            </p>
+          </div>
+        )}
+
+        {/* Preview */}
+        {generatedText && (
+          <div className="bg-gray-900 text-white p-4 rounded-xl text-sm whitespace-pre-wrap font-mono max-h-80 overflow-y-auto">
+            {generatedText}
+          </div>
+        )}
+
+        {/* Action Buttons */}
+        <div className="flex gap-3 pt-2">
+          <Button
+            onClick={handleCopy}
+            className="flex-1"
+            leftIcon={copied ? <CheckCircle className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+            variant={copied ? 'primary' : 'secondary'}
+          >
+            {copied ? 'Copiado!' : 'Copiar'}
+          </Button>
+        </div>
+      </div>
+    </Drawer>
   );
 }
 
@@ -601,6 +891,7 @@ export function ClientDetail({ client, onBack, onEdit, onArchive }: ClientDetail
   const [deletingPackId, setDeletingPackId] = useState<string | null>(null);
   const [partialPaymentPack, setPartialPaymentPack] = useState<Pack | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isExportOpen, setIsExportOpen] = useState(false);
 
   const handleAddPack = async (data: {
     serviceType: ServiceType;
@@ -716,9 +1007,11 @@ export function ClientDetail({ client, onBack, onEdit, onArchive }: ClientDetail
 
         {/* Client Info */}
         <div className="flex items-center gap-4">
-          <div className="w-16 h-16 rounded-full bg-emerald-100 flex items-center justify-center">
-            <Dog className="w-8 h-8 text-emerald-600" />
-          </div>
+          <PetAvatar
+            photoUrl={client.photoUrl}
+            petName={client.petName}
+            size="lg"
+          />
           <div className="flex-1 space-y-1">
             <div className="flex items-center gap-2 text-sm text-gray-600">
               <Phone className="w-4 h-4" />
@@ -794,7 +1087,17 @@ export function ClientDetail({ client, onBack, onEdit, onArchive }: ClientDetail
 
         {/* Operations History */}
         <section>
-          <h2 className="text-lg font-bold text-gray-900 mb-3">Histórico Recente</h2>
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="text-lg font-bold text-gray-900">Histórico Recente</h2>
+            <Button
+              size="sm"
+              variant="secondary"
+              onClick={() => setIsExportOpen(true)}
+              leftIcon={<FileText className="w-4 h-4" />}
+            >
+              Exportar
+            </Button>
+          </div>
           <Card>
             <OperationsHistory clientId={client.id} />
           </Card>
@@ -882,6 +1185,14 @@ export function ClientDetail({ client, onBack, onEdit, onArchive }: ClientDetail
           />
         )}
       </Drawer>
+
+      {/* Export History Drawer */}
+      <ExportHistoryDrawer
+        client={client}
+        packs={packs}
+        isOpen={isExportOpen}
+        onClose={() => setIsExportOpen(false)}
+      />
     </div>
   );
 }

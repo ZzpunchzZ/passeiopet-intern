@@ -41,6 +41,7 @@ interface UseScheduleReturn {
   ) => Promise<void>;
   deleteScheduledService: (id: string) => Promise<void>;
   completeService: (service: ScheduledServiceWithClient) => Promise<void>;
+  markAsNotDone: (id: string) => Promise<void>;
   cancelService: (id: string) => Promise<void>;
 }
 
@@ -73,9 +74,9 @@ export function useSchedule(): UseScheduleReturn {
             ...docSnap.data(),
           })) as ScheduledService[];
 
-          // Filter out cancelled services
+          // Filter out cancelled services (keep not_done for visibility)
           const activeServices = servicesData.filter(
-            (s) => s.status === 'scheduled' || s.status === 'completed'
+            (s) => s.status === 'scheduled' || s.status === 'completed' || s.status === 'not_done'
           );
 
           // Client-side join: fetch client data for each service
@@ -103,7 +104,10 @@ export function useSchedule(): UseScheduleReturn {
               const dateA = a.scheduledDate?.toMillis?.() || 0;
               const dateB = b.scheduledDate?.toMillis?.() || 0;
               if (dateA !== dateB) return dateA - dateB;
-              return a.scheduledTime.localeCompare(b.scheduledTime);
+              // Services without time go to the end of that day
+              const timeA = a.scheduledTime || '99:99';
+              const timeB = b.scheduledTime || '99:99';
+              return timeA.localeCompare(timeB);
             });
 
           setAllServices(validServices);
@@ -251,7 +255,12 @@ export function useSchedule(): UseScheduleReturn {
     []
   );
 
-  // Cancel a service
+  // Mark a service as not done (não realizado)
+  const markAsNotDone = async (id: string): Promise<void> => {
+    await updateScheduledService(id, { status: 'not_done' as ScheduleStatus });
+  };
+
+  // Cancel a service (remove from schedule)
   const cancelService = async (id: string): Promise<void> => {
     await updateScheduledService(id, { status: 'cancelled' as ScheduleStatus });
   };
@@ -265,6 +274,7 @@ export function useSchedule(): UseScheduleReturn {
     updateScheduledService,
     deleteScheduledService,
     completeService,
+    markAsNotDone,
     cancelService,
   };
 }

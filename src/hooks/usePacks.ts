@@ -72,7 +72,7 @@ export function usePacks(): UsePacksReturn {
           setLoading(false);
         } catch (err) {
           console.error('Error fetching packs:', err);
-          setError('Erro ao carregar pacotes');
+          setError('Erro ao carregar ciclos');
           setLoading(false);
         }
       },
@@ -100,14 +100,14 @@ export function usePacks(): UsePacksReturn {
         const packDoc = await transaction.get(packRef);
 
         if (!packDoc.exists()) {
-          throw new Error('Pacote não encontrado');
+          throw new Error('Ciclo não encontrado');
         }
 
         const packData = packDoc.data() as Pack;
         const newUsedCredits = packData.usedCredits + weight;
 
         if (newUsedCredits > packData.totalCredits) {
-          throw new Error('Créditos insuficientes no pacote');
+          throw new Error('Créditos insuficientes no ciclo');
         }
 
         // Create operation document
