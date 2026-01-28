@@ -36,9 +36,9 @@ export function PetAvatar({ photoUrl, petName, size = 'md', className = '' }: Pe
 
   return (
     <div
-      className={`${sizeClass} rounded-full bg-amber-100 flex items-center justify-center flex-shrink-0 ${className}`}
+      className={`${sizeClass} rounded-full bg-amber-900/50 flex items-center justify-center flex-shrink-0 ${className}`}
     >
-      <Dog className={`${iconSize} text-amber-600`} />
+      <Dog className={`${iconSize} text-amber-400`} />
     </div>
   );
 }

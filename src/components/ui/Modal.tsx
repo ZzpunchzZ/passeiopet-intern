@@ -22,22 +22,22 @@ export function Modal({ isOpen, onClose, title, children, size = 'md' }: ModalPr
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       {/* Backdrop */}
       <div
-        className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+        className="absolute inset-0 bg-black/70 backdrop-blur-sm"
         onClick={onClose}
       />
 
       {/* Modal */}
       <div
-        className={`relative w-full ${sizeClasses[size]} bg-white rounded-2xl shadow-xl animate-scale-in`}
+        className={`relative w-full ${sizeClasses[size]} bg-gray-800 rounded-2xl shadow-xl animate-scale-in`}
       >
         {/* Header */}
-        <div className="flex items-center justify-between p-4 border-b border-gray-100">
-          <h2 className="text-lg font-bold text-gray-900">{title}</h2>
+        <div className="flex items-center justify-between p-4 border-b border-gray-700">
+          <h2 className="text-lg font-bold text-gray-100">{title}</h2>
           <button
             onClick={onClose}
-            className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+            className="p-2 hover:bg-gray-700 rounded-full transition-colors"
           >
-            <X className="w-5 h-5 text-gray-500" />
+            <X className="w-5 h-5 text-gray-400" />
           </button>
         </div>
 
@@ -64,22 +64,22 @@ export function Drawer({ isOpen, onClose, title, subtitle, children }: DrawerPro
     <div className="fixed inset-0 z-50 flex items-end justify-center">
       {/* Backdrop */}
       <div
-        className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+        className="absolute inset-0 bg-black/70 backdrop-blur-sm"
         onClick={onClose}
       />
 
       {/* Drawer */}
-      <div className="relative w-full max-w-lg bg-white rounded-t-3xl p-6 pb-8 animate-slide-up max-h-[90vh] overflow-auto">
+      <div className="relative w-full max-w-lg bg-gray-800 rounded-t-3xl p-6 pb-8 animate-slide-up max-h-[90vh] overflow-auto">
         <div className="flex items-center justify-between mb-4">
           <div>
-            <h2 className="text-xl font-bold text-gray-900">{title}</h2>
-            {subtitle && <p className="text-sm text-gray-500">{subtitle}</p>}
+            <h2 className="text-xl font-bold text-gray-100">{title}</h2>
+            {subtitle && <p className="text-sm text-gray-400">{subtitle}</p>}
           </div>
           <button
             onClick={onClose}
-            className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+            className="p-2 hover:bg-gray-700 rounded-full transition-colors"
           >
-            <X className="w-5 h-5 text-gray-500" />
+            <X className="w-5 h-5 text-gray-400" />
           </button>
         </div>
 
@@ -116,27 +116,27 @@ export function ConfirmDialog({
   if (!isOpen) return null;
 
   const variantClasses = {
-    danger: 'bg-red-500 hover:bg-red-600',
-    warning: 'bg-orange-500 hover:bg-orange-600',
-    default: 'bg-emerald-500 hover:bg-emerald-600',
+    danger: 'bg-red-600 hover:bg-red-500',
+    warning: 'bg-orange-600 hover:bg-orange-500',
+    default: 'bg-emerald-600 hover:bg-emerald-500',
   };
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div
-        className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+        className="absolute inset-0 bg-black/70 backdrop-blur-sm"
         onClick={onClose}
       />
 
-      <div className="relative w-full max-w-sm bg-white rounded-2xl shadow-xl p-6 animate-scale-in">
-        <h2 className="text-lg font-bold text-gray-900 mb-2">{title}</h2>
-        <p className="text-gray-600 mb-6">{message}</p>
+      <div className="relative w-full max-w-sm bg-gray-800 rounded-2xl shadow-xl p-6 animate-scale-in">
+        <h2 className="text-lg font-bold text-gray-100 mb-2">{title}</h2>
+        <p className="text-gray-400 mb-6">{message}</p>
 
         <div className="flex gap-3">
           <button
             onClick={onClose}
             disabled={isLoading}
-            className="flex-1 py-3 px-4 rounded-xl font-semibold text-gray-700 bg-gray-100 hover:bg-gray-200 transition-colors disabled:opacity-50"
+            className="flex-1 py-3 px-4 rounded-xl font-semibold text-gray-300 bg-gray-700 hover:bg-gray-600 transition-colors disabled:opacity-50"
           >
             {cancelText}
           </button>

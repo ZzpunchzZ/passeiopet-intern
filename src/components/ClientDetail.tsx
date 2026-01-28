@@ -19,6 +19,7 @@ import {
   Copy,
   CheckCircle,
   FileText,
+  ExternalLink,
 } from 'lucide-react';
 import { Timestamp } from 'firebase/firestore';
 import { useClientPacks } from '../hooks/useClientPacks';
@@ -135,7 +136,7 @@ function PackForm({ onSubmit, onClose, isLoading }: PackFormProps) {
         />
       )}
       {formData.serviceType === 'walk' && (
-        <p className="text-sm text-gray-500 italic">
+        <p className="text-sm text-gray-400 italic">
           Para Passeio, o pacote fica ativo até ser encerrado manualmente ou os créditos acabarem.
         </p>
       )}
@@ -277,7 +278,7 @@ function PackCard({ pack, onUpdatePayment, onEdit, onDelete, onClosePack, onPart
   };
 
   const getBarColor = () => {
-    if (isCompleted) return 'bg-gray-400';
+    if (isCompleted) return 'bg-gray-500';
     if (isLow) return 'bg-orange-500';
     return 'bg-emerald-500';
   };
@@ -287,8 +288,8 @@ function PackCard({ pack, onUpdatePayment, onEdit, onDelete, onClosePack, onPart
       {/* Header */}
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-2">
-          <Package className={`w-5 h-5 ${isCompleted ? 'text-gray-400' : 'text-emerald-600'}`} />
-          <span className="font-semibold text-gray-900">
+          <Package className={`w-5 h-5 ${isCompleted ? 'text-gray-500' : 'text-emerald-400'}`} />
+          <span className="font-semibold text-gray-100">
             {pack.serviceType === 'walk' ? 'Passeio' : 'Pet Sitter'}
           </span>
           {!pack.isActive && <Badge variant="default">Encerrado</Badge>}
@@ -299,9 +300,9 @@ function PackCard({ pack, onUpdatePayment, onEdit, onDelete, onClosePack, onPart
           <div className="relative">
             <button
               onClick={() => setShowMenu(!showMenu)}
-              className="p-1 rounded-full hover:bg-gray-100 transition-colors"
+              className="p-1 rounded-full hover:bg-gray-700 transition-colors"
             >
-              <MoreVertical className="w-5 h-5 text-gray-500" />
+              <MoreVertical className="w-5 h-5 text-gray-400" />
             </button>
             {showMenu && (
               <>
@@ -309,15 +310,15 @@ function PackCard({ pack, onUpdatePayment, onEdit, onDelete, onClosePack, onPart
                   className="fixed inset-0 z-10" 
                   onClick={() => setShowMenu(false)} 
                 />
-                <div className="absolute right-0 top-8 z-20 w-36 bg-white rounded-lg shadow-lg border py-1">
+                <div className="absolute right-0 top-8 z-20 w-36 bg-gray-700 rounded-lg shadow-lg border border-gray-600 py-1">
                   <button
                     onClick={() => {
                       setShowMenu(false);
                       onEdit();
                     }}
-                    className="w-full px-4 py-2 text-left text-sm hover:bg-gray-50 flex items-center gap-2"
+                    className="w-full px-4 py-2 text-left text-sm hover:bg-gray-600 flex items-center gap-2 text-gray-200"
                   >
-                    <Edit className="w-4 h-4 text-gray-500" />
+                    <Edit className="w-4 h-4 text-gray-400" />
                     Editar
                   </button>
                   <button
@@ -325,7 +326,7 @@ function PackCard({ pack, onUpdatePayment, onEdit, onDelete, onClosePack, onPart
                       setShowMenu(false);
                       onDelete();
                     }}
-                    className="w-full px-4 py-2 text-left text-sm hover:bg-gray-50 flex items-center gap-2 text-red-600"
+                    className="w-full px-4 py-2 text-left text-sm hover:bg-gray-600 flex items-center gap-2 text-red-400"
                   >
                     <Trash2 className="w-4 h-4" />
                     Excluir
@@ -339,11 +340,11 @@ function PackCard({ pack, onUpdatePayment, onEdit, onDelete, onClosePack, onPart
 
       {/* Pack Info */}
       <div className="grid grid-cols-2 gap-2 mb-3 text-sm">
-        <div className="flex items-center gap-2 text-gray-600">
+        <div className="flex items-center gap-2 text-gray-400">
           <DollarSign className="w-4 h-4" />
           <span>{formatCurrency(pack.packageValue || 0)}</span>
         </div>
-        <div className="flex items-center gap-2 text-gray-600">
+        <div className="flex items-center gap-2 text-gray-400">
           <Calendar className="w-4 h-4" />
           <span>
             {formatDateDisplay(pack.startDate)} - {formatDateDisplay(pack.endDate)}
@@ -353,8 +354,8 @@ function PackCard({ pack, onUpdatePayment, onEdit, onDelete, onClosePack, onPart
 
       {/* Payment date if paid */}
       {pack.paymentStatus === 'paid' && pack.paymentDate && (
-        <div className="bg-emerald-50 border border-emerald-200 rounded-lg px-3 py-2 mb-3 text-sm">
-          <span className="text-emerald-700">
+        <div className="bg-emerald-900/30 border border-emerald-700 rounded-lg px-3 py-2 mb-3 text-sm">
+          <span className="text-emerald-400">
             ✓ Pago em {formatDateDisplay(pack.paymentDate)}
           </span>
         </div>
@@ -363,14 +364,14 @@ function PackCard({ pack, onUpdatePayment, onEdit, onDelete, onClosePack, onPart
       {/* Progress bar */}
       <div className="mb-3">
         <div className="flex justify-between text-sm mb-1">
-          <span className="text-gray-600">
+          <span className="text-gray-400">
             {pack.usedCredits} / {pack.totalCredits} {pack.serviceType === 'walk' ? 'passeios' : 'diárias'}
           </span>
-          <span className={`font-medium ${isLow ? 'text-orange-600' : 'text-gray-600'}`}>
+          <span className={`font-medium ${isLow ? 'text-orange-400' : 'text-gray-400'}`}>
             {remaining} restante{remaining !== 1 ? 's' : ''}
           </span>
         </div>
-        <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
+        <div className="h-2 bg-gray-700 rounded-full overflow-hidden">
           <div
             className={`h-full ${getBarColor()} transition-all rounded-full`}
             style={{ width: `${percentage}%` }}
@@ -405,11 +406,11 @@ function PackCard({ pack, onUpdatePayment, onEdit, onDelete, onClosePack, onPart
         )}
         {/* Show partial payment info */}
         {pack.paymentStatus === 'partial' && pack.paidAmount !== undefined && pack.paidAmount > 0 && (
-          <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-2 text-sm">
-            <span className="text-yellow-800">
+          <div className="bg-yellow-900/30 border border-yellow-700 rounded-lg p-2 text-sm">
+            <span className="text-yellow-400">
               Pago: {formatCurrency(pack.paidAmount)} de {formatCurrency(pack.packageValue)}
             </span>
-            <span className="text-yellow-600 ml-2">
+            <span className="text-yellow-500 ml-2">
               (Faltam {formatCurrency(pack.packageValue - pack.paidAmount)})
             </span>
           </div>
@@ -421,7 +422,7 @@ function PackCard({ pack, onUpdatePayment, onEdit, onDelete, onClosePack, onPart
               size="sm"
               variant="ghost"
               onClick={() => onUpdatePayment('pending')}
-              className="flex-1 text-orange-600 hover:bg-orange-50"
+              className="flex-1 text-orange-400 hover:bg-orange-900/30"
             >
               Desfazer Pagamento
             </Button>
@@ -498,7 +499,7 @@ function OperationsHistory({ clientId }: { clientId: string }) {
 
   if (historyItems.length === 0) {
     return (
-      <p className="text-center text-gray-500 py-4">
+      <p className="text-center text-gray-400 py-4">
         Nenhuma operação registrada ainda
       </p>
     );
@@ -509,7 +510,7 @@ function OperationsHistory({ clientId }: { clientId: string }) {
 
   return (
     <div className="space-y-2">
-      <p className="text-sm text-gray-500 mb-2">
+      <p className="text-sm text-gray-400 mb-2">
         Histórico: {completedCount} realizado{completedCount !== 1 ? 's' : ''}
         {notDoneCount > 0 && `, ${notDoneCount} não realizado${notDoneCount !== 1 ? 's' : ''}`}
       </p>
@@ -518,30 +519,30 @@ function OperationsHistory({ clientId }: { clientId: string }) {
           key={item.id}
           className={`flex items-center gap-3 p-3 rounded-xl border ${
             item.type === 'completed'
-              ? 'bg-emerald-50 border-emerald-100'
-              : 'bg-red-50 border-red-100'
+              ? 'bg-emerald-900/30 border-emerald-700'
+              : 'bg-red-900/30 border-red-700'
           }`}
         >
-          <div className="w-8 h-8 rounded-full bg-white flex items-center justify-center">
+          <div className="w-8 h-8 rounded-full bg-gray-800 flex items-center justify-center">
             {item.type === 'completed' ? (
-              <Check className="w-4 h-4 text-emerald-600" />
+              <Check className="w-4 h-4 text-emerald-400" />
             ) : (
-              <X className="w-4 h-4 text-red-500" />
+              <X className="w-4 h-4 text-red-400" />
             )}
           </div>
           <div className="flex-1">
-            <p className="font-medium text-gray-900">
+            <p className="font-medium text-gray-100">
               {formatShortDate(Timestamp.fromDate(item.date))} -{' '}
               {item.type === 'completed' ? (
-                <span className="text-emerald-600">OK</span>
+                <span className="text-emerald-400">OK</span>
               ) : (
-                <span className="text-red-500">Não Realizado</span>
+                <span className="text-red-400">Não Realizado</span>
               )}
             </p>
-            <p className="text-xs text-gray-500">{formatOperationType(item.operationType)}</p>
+            <p className="text-xs text-gray-400">{formatOperationType(item.operationType)}</p>
           </div>
           {item.type === 'completed' && (
-            <span className="text-sm text-gray-500">-{item.weight} crédito{item.weight > 1 ? 's' : ''}</span>
+            <span className="text-sm text-gray-400">-{item.weight} crédito{item.weight > 1 ? 's' : ''}</span>
           )}
         </div>
       ))}
@@ -771,7 +772,7 @@ function ExportHistoryDrawer({ client, packs, isOpen, onClose }: ExportHistoryDr
               alt="Cachorrinho correndo"
               className="w-32 h-32 rounded-xl object-cover"
             />
-            <p className="text-lg font-bold text-emerald-600 mt-2 animate-pulse">
+            <p className="text-lg font-bold text-emerald-400 mt-2 animate-pulse">
               🎉 Ciclo completo! 🐕
             </p>
           </div>
@@ -779,7 +780,7 @@ function ExportHistoryDrawer({ client, packs, isOpen, onClose }: ExportHistoryDr
 
         {/* Preview */}
         {generatedText && (
-          <div className="bg-gray-900 text-white p-4 rounded-xl text-sm whitespace-pre-wrap font-mono max-h-80 overflow-y-auto">
+          <div className="bg-gray-700 text-gray-100 p-4 rounded-xl text-sm whitespace-pre-wrap font-mono max-h-80 overflow-y-auto">
             {generatedText}
           </div>
         )}
@@ -837,20 +838,20 @@ function PartialPaymentForm({ pack, onSubmit, onClose, isLoading }: PartialPayme
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
-      <div className="bg-gray-50 rounded-xl p-4 space-y-2">
+      <div className="bg-gray-700 rounded-xl p-4 space-y-2">
         <div className="flex justify-between text-sm">
-          <span className="text-gray-500">Valor do pacote:</span>
-          <span className="font-medium">{formatCurrency(pack.packageValue)}</span>
+          <span className="text-gray-400">Valor do pacote:</span>
+          <span className="font-medium text-gray-200">{formatCurrency(pack.packageValue)}</span>
         </div>
         {pack.paidAmount !== undefined && pack.paidAmount > 0 && (
           <>
             <div className="flex justify-between text-sm">
-              <span className="text-gray-500">Já pago:</span>
-              <span className="font-medium text-emerald-600">{formatCurrency(pack.paidAmount)}</span>
+              <span className="text-gray-400">Já pago:</span>
+              <span className="font-medium text-emerald-400">{formatCurrency(pack.paidAmount)}</span>
             </div>
             <div className="flex justify-between text-sm">
-              <span className="text-gray-500">Restante:</span>
-              <span className="font-medium text-orange-600">{formatCurrency(remaining)}</span>
+              <span className="text-gray-400">Restante:</span>
+              <span className="font-medium text-orange-400">{formatCurrency(remaining)}</span>
             </div>
           </>
         )}
@@ -867,7 +868,7 @@ function PartialPaymentForm({ pack, onSubmit, onClose, isLoading }: PartialPayme
         error={error}
       />
 
-      <p className="text-xs text-gray-500">
+      <p className="text-xs text-gray-400">
         Informe o valor total já recebido até o momento.
       </p>
 
@@ -986,19 +987,19 @@ export function ClientDetail({ client, onBack, onEdit, onArchive }: ClientDetail
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 pb-24">
+    <div className="min-h-screen bg-gray-900 pb-24">
       {/* Header */}
-      <header className="bg-white border-b border-gray-100 px-4 py-4 sticky top-0 z-10">
+      <header className="bg-gray-800 border-b border-gray-700 px-4 py-4 sticky top-0 z-10">
         <div className="flex items-center gap-3 mb-4">
           <button
             onClick={onBack}
-            className="p-2 -ml-2 hover:bg-gray-100 rounded-full transition-colors"
+            className="p-2 -ml-2 hover:bg-gray-700 rounded-full transition-colors"
           >
-            <ArrowLeft className="w-5 h-5 text-gray-600" />
+            <ArrowLeft className="w-5 h-5 text-gray-400" />
           </button>
           <div className="flex-1">
-            <h1 className="text-xl font-bold text-gray-900">{client.petName}</h1>
-            <p className="text-sm text-gray-500">{client.ownerName}</p>
+            <h1 className="text-xl font-bold text-gray-100">{client.petName}</h1>
+            <p className="text-sm text-gray-400">{client.ownerName}</p>
           </div>
           <Badge variant={client.status === 'active' ? 'success' : 'warning'}>
             {client.status === 'active' ? 'Ativo' : 'Arquivado'}
@@ -1013,17 +1014,23 @@ export function ClientDetail({ client, onBack, onEdit, onArchive }: ClientDetail
             size="lg"
           />
           <div className="flex-1 space-y-1">
-            <div className="flex items-center gap-2 text-sm text-gray-600">
+            <div className="flex items-center gap-2 text-sm text-gray-400">
               <Phone className="w-4 h-4" />
-              <a href={`tel:${client.phone}`} className="hover:text-emerald-600">
+              <a href={`tel:${client.phone}`} className="hover:text-emerald-400">
                 {client.phone}
               </a>
             </div>
             {client.address && (
-              <div className="flex items-center gap-2 text-sm text-gray-600">
+              <a
+                href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(client.address)}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-2 text-sm text-blue-400 hover:text-blue-300 transition-colors"
+              >
                 <MapPin className="w-4 h-4" />
-                <span>{client.address}</span>
-              </div>
+                <span className="underline underline-offset-2">{client.address}</span>
+                <ExternalLink className="w-3 h-3" />
+              </a>
             )}
           </div>
         </div>
@@ -1048,7 +1055,7 @@ export function ClientDetail({ client, onBack, onEdit, onArchive }: ClientDetail
         {/* Packs Section */}
         <section>
           <div className="flex items-center justify-between mb-3">
-            <h2 className="text-lg font-bold text-gray-900">Pacotes</h2>
+            <h2 className="text-lg font-bold text-gray-100">Pacotes</h2>
             <Button size="sm" onClick={() => setIsPackFormOpen(true)} leftIcon={<Plus className="w-4 h-4" />}>
               Novo Pacote
             </Button>
@@ -1088,7 +1095,7 @@ export function ClientDetail({ client, onBack, onEdit, onArchive }: ClientDetail
         {/* Operations History */}
         <section>
           <div className="flex items-center justify-between mb-3">
-            <h2 className="text-lg font-bold text-gray-900">Histórico Recente</h2>
+            <h2 className="text-lg font-bold text-gray-100">Histórico Recente</h2>
             <Button
               size="sm"
               variant="secondary"
@@ -1143,10 +1150,10 @@ export function ClientDetail({ client, onBack, onEdit, onArchive }: ClientDetail
         title="Excluir Pacote"
       >
         <div className="space-y-4">
-          <p className="text-gray-600">
+          <p className="text-gray-300">
             Tem certeza que deseja excluir este pacote? Esta ação não pode ser desfeita.
           </p>
-          <p className="text-sm text-red-600 bg-red-50 p-3 rounded-lg">
+          <p className="text-sm text-red-400 bg-red-900/40 p-3 rounded-lg">
             ⚠️ O histórico de operações associado a este pacote será mantido, mas ficará órfão.
           </p>
           <div className="flex gap-3 pt-4">

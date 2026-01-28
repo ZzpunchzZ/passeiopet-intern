@@ -97,36 +97,36 @@ function TemplateCard({ template, onEdit, onDelete, onCopy }: TemplateCardProps)
   return (
     <Card>
       <div className="flex items-start justify-between mb-2">
-        <h3 className="font-bold text-gray-900">{template.title}</h3>
+        <h3 className="font-bold text-gray-100">{template.title}</h3>
         <div className="flex gap-1">
           <button
             onClick={handleCopy}
-            className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+            className="p-2 hover:bg-gray-700 rounded-lg transition-colors"
             title="Copiar"
           >
             {copied ? (
-              <Check className="w-4 h-4 text-emerald-600" />
+              <Check className="w-4 h-4 text-emerald-400" />
             ) : (
               <Copy className="w-4 h-4 text-gray-400" />
             )}
           </button>
           <button
             onClick={onEdit}
-            className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+            className="p-2 hover:bg-gray-700 rounded-lg transition-colors"
             title="Editar"
           >
             <Edit className="w-4 h-4 text-gray-400" />
           </button>
           <button
             onClick={onDelete}
-            className="p-2 hover:bg-red-50 rounded-lg transition-colors"
+            className="p-2 hover:bg-red-900/40 rounded-lg transition-colors"
             title="Excluir"
           >
-            <Trash2 className="w-4 h-4 text-gray-400 hover:text-red-500" />
+            <Trash2 className="w-4 h-4 text-gray-400 hover:text-red-400" />
           </button>
         </div>
       </div>
-      <p className="text-sm text-gray-600 whitespace-pre-wrap mb-3">{template.content}</p>
+      <p className="text-sm text-gray-300 whitespace-pre-wrap mb-3">{template.content}</p>
     </Card>
   );
 }
@@ -136,7 +136,7 @@ function TemplatesLoadingSkeleton() {
   return (
     <div className="space-y-3">
       {[1, 2, 3].map((i) => (
-        <div key={i} className="bg-white rounded-2xl border-2 border-gray-100 p-5">
+        <div key={i} className="bg-gray-800 rounded-2xl border-2 border-gray-700 p-5">
           <Skeleton className="h-5 w-40 mb-3" />
           <Skeleton className="h-16 w-full mb-3" />
           <Skeleton className="h-10 w-full" />
@@ -194,13 +194,13 @@ export function MessagesPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 pb-24">
+    <div className="min-h-screen bg-gray-900 pb-24">
       {/* Header */}
-      <header className="bg-white border-b border-gray-100 px-4 py-4 sticky top-0 z-10">
+      <header className="bg-gray-800 border-b border-gray-700 px-4 py-4 sticky top-0 z-10">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">Mensagens</h1>
-            <p className="text-sm text-gray-500">
+            <h1 className="text-2xl font-bold text-gray-100">Mensagens</h1>
+            <p className="text-sm text-gray-400">
               {templates.length} template{templates.length !== 1 ? 's' : ''}
             </p>
           </div>
@@ -213,7 +213,7 @@ export function MessagesPage() {
       {/* Content */}
       <main className="p-4 space-y-3">
         {error && (
-          <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl">
+          <div className="bg-red-900/40 border border-red-700 text-red-400 px-4 py-3 rounded-xl">
             {error}
           </div>
         )}

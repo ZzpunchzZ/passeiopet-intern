@@ -18,12 +18,12 @@ const NAV_ITEMS: { id: TabType; label: string; icon: typeof Calendar }[] = [
 
 export function Layout({ children, activeTab, onTabChange }: LayoutProps) {
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col">
+    <div className="min-h-screen bg-gray-900 flex flex-col">
       {/* Main content area */}
       <div className="flex-1 overflow-auto">{children}</div>
 
       {/* Bottom Navigation */}
-      <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 px-4 py-2 safe-area-bottom">
+      <nav className="fixed bottom-0 left-0 right-0 bg-gray-800 border-t border-gray-700 px-4 py-2 safe-area-bottom">
         <div className="max-w-lg mx-auto flex items-center justify-around">
           {NAV_ITEMS.map((item) => {
             const Icon = item.icon;
@@ -35,8 +35,8 @@ export function Layout({ children, activeTab, onTabChange }: LayoutProps) {
                 onClick={() => onTabChange(item.id)}
                 className={`flex flex-col items-center gap-1 py-2 px-4 rounded-xl transition-all ${
                   isActive
-                    ? 'text-emerald-600'
-                    : 'text-gray-400 hover:text-gray-600'
+                    ? 'text-emerald-400'
+                    : 'text-gray-500 hover:text-gray-300'
                 }`}
               >
                 <Icon
@@ -46,13 +46,13 @@ export function Layout({ children, activeTab, onTabChange }: LayoutProps) {
                 />
                 <span
                   className={`text-xs font-medium ${
-                    isActive ? 'text-emerald-600' : 'text-gray-500'
+                    isActive ? 'text-emerald-400' : 'text-gray-400'
                   }`}
                 >
                   {item.label}
                 </span>
                 {isActive && (
-                  <div className="absolute bottom-1 w-1 h-1 bg-emerald-500 rounded-full" />
+                  <div className="absolute bottom-1 w-1 h-1 bg-emerald-400 rounded-full" />
                 )}
               </button>
             );

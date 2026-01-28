@@ -12,9 +12,9 @@ function formatCurrency(value: number): string {
 
 // Payment status config
 const PAYMENT_STATUS_CONFIG: Record<PaymentStatus, { label: string; bgColor: string; textColor: string }> = {
-  pending: { label: 'Pendente', bgColor: 'bg-red-100', textColor: 'text-red-700' },
-  partial: { label: 'Parcial', bgColor: 'bg-yellow-100', textColor: 'text-yellow-700' },
-  paid: { label: 'Pago', bgColor: 'bg-green-100', textColor: 'text-green-700' },
+  pending: { label: 'Pendente', bgColor: 'bg-red-900/50', textColor: 'text-red-400' },
+  partial: { label: 'Parcial', bgColor: 'bg-yellow-900/50', textColor: 'text-yellow-400' },
+  paid: { label: 'Pago', bgColor: 'bg-green-900/50', textColor: 'text-green-400' },
 };
 
 // Operation type labels and icons
@@ -50,22 +50,22 @@ function ProgressBar({
   return (
     <div className="w-full">
       <div className="flex justify-between text-sm mb-1">
-        <span className="text-gray-600">
+        <span className="text-gray-400">
           {used} / {total} créditos usados
         </span>
         <span
           className={`font-medium ${
             remaining <= 1
-              ? 'text-red-600'
+              ? 'text-red-400'
               : remaining <= 3
-              ? 'text-orange-600'
-              : 'text-emerald-600'
+              ? 'text-orange-400'
+              : 'text-emerald-400'
           }`}
         >
           {remaining} restante{remaining !== 1 ? 's' : ''}
         </span>
       </div>
-      <div className="h-3 bg-gray-200 rounded-full overflow-hidden">
+      <div className="h-3 bg-gray-700 rounded-full overflow-hidden">
         <div
           className={`h-full ${getBarColor()} transition-all duration-300 rounded-full`}
           style={{ width: `${percentage}%` }}
@@ -89,33 +89,33 @@ function PetCard({
 
   return (
     <div
-      className={`bg-white rounded-2xl shadow-sm border-2 p-5 ${
-        isLow ? 'border-orange-200' : 'border-gray-100'
+      className={`bg-gray-800 rounded-2xl shadow-sm border-2 p-5 ${
+        isLow ? 'border-orange-700' : 'border-gray-700'
       }`}
     >
       <div className="flex items-start justify-between mb-3">
         <div className="flex items-center gap-3">
           <div
             className={`w-12 h-12 rounded-full flex items-center justify-center ${
-              isLow ? 'bg-orange-100' : 'bg-emerald-100'
+              isLow ? 'bg-orange-900/50' : 'bg-emerald-900/50'
             }`}
           >
             <Dog
-              className={`w-6 h-6 ${isLow ? 'text-orange-600' : 'text-emerald-600'}`}
+              className={`w-6 h-6 ${isLow ? 'text-orange-400' : 'text-emerald-400'}`}
             />
           </div>
           <div>
-            <h3 className="text-xl font-bold text-gray-900">
+            <h3 className="text-xl font-bold text-gray-100">
               {pack.client.petName}
             </h3>
-            <p className="text-sm text-gray-500">{pack.client.ownerName}</p>
+            <p className="text-sm text-gray-400">{pack.client.ownerName}</p>
           </div>
         </div>
         <span
           className={`px-3 py-1 rounded-full text-xs font-medium ${
             pack.serviceType === 'walk'
-              ? 'bg-blue-100 text-blue-700'
-              : 'bg-purple-100 text-purple-700'
+              ? 'bg-blue-900/50 text-blue-400'
+              : 'bg-purple-900/50 text-purple-400'
           }`}
         >
           {pack.serviceType === 'walk' ? 'Passeio' : 'Pet Sitter'}
@@ -123,10 +123,10 @@ function PetCard({
       </div>
 
       {/* Package value and payment status */}
-      <div className="flex items-center justify-between mb-3 py-2 px-3 bg-gray-50 rounded-lg">
+      <div className="flex items-center justify-between mb-3 py-2 px-3 bg-gray-700 rounded-lg">
         <div className="flex items-center gap-2">
-          <DollarSign className="w-4 h-4 text-gray-500" />
-          <span className="text-sm font-medium text-gray-700">
+          <DollarSign className="w-4 h-4 text-gray-400" />
+          <span className="text-sm font-medium text-gray-300">
             {formatCurrency(pack.packageValue)}
           </span>
         </div>
@@ -142,8 +142,8 @@ function PetCard({
         disabled={remaining === 0}
         className={`mt-4 w-full py-3 px-4 rounded-xl font-semibold text-white transition-all ${
           remaining === 0
-            ? 'bg-gray-300 cursor-not-allowed'
-            : 'bg-emerald-500 hover:bg-emerald-600 active:scale-[0.98]'
+            ? 'bg-gray-600 cursor-not-allowed'
+            : 'bg-emerald-600 hover:bg-emerald-500 active:scale-[0.98]'
         }`}
       >
         {remaining === 0 ? 'Créditos Esgotados' : 'Registrar Ponto'}
@@ -170,25 +170,25 @@ function OperationDrawer({
     <div className="fixed inset-0 z-50 flex items-end justify-center">
       {/* Backdrop */}
       <div
-        className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+        className="absolute inset-0 bg-black/70 backdrop-blur-sm"
         onClick={onClose}
       />
 
       {/* Drawer */}
-      <div className="relative w-full max-w-lg bg-white rounded-t-3xl p-6 pb-8 animate-slide-up">
+      <div className="relative w-full max-w-lg bg-gray-800 rounded-t-3xl p-6 pb-8 animate-slide-up">
         <div className="flex items-center justify-between mb-6">
           <div>
-            <h2 className="text-xl font-bold text-gray-900">Registrar Ponto</h2>
-            <p className="text-sm text-gray-500">
+            <h2 className="text-xl font-bold text-gray-100">Registrar Ponto</h2>
+            <p className="text-sm text-gray-400">
               {pack.client.petName} • {remaining} crédito
               {remaining !== 1 ? 's' : ''} restante{remaining !== 1 ? 's' : ''}
             </p>
           </div>
           <button
             onClick={onClose}
-            className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+            className="p-2 hover:bg-gray-700 rounded-full transition-colors"
           >
-            <X className="w-5 h-5 text-gray-500" />
+            <X className="w-5 h-5 text-gray-400" />
           </button>
         </div>
 
@@ -204,24 +204,24 @@ function OperationDrawer({
                 disabled={!canUse || isSubmitting}
                 className={`w-full flex items-center gap-4 p-4 rounded-xl border-2 transition-all ${
                   canUse
-                    ? 'border-gray-200 hover:border-emerald-500 hover:bg-emerald-50'
-                    : 'border-gray-100 bg-gray-50 opacity-50 cursor-not-allowed'
+                    ? 'border-gray-600 hover:border-emerald-500 hover:bg-emerald-900/30'
+                    : 'border-gray-700 bg-gray-700 opacity-50 cursor-not-allowed'
                 }`}
               >
                 <div
                   className={`w-12 h-12 rounded-full flex items-center justify-center ${
-                    canUse ? 'bg-emerald-100' : 'bg-gray-200'
+                    canUse ? 'bg-emerald-900/50' : 'bg-gray-600'
                   }`}
                 >
                   <Icon
                     className={`w-6 h-6 ${
-                      canUse ? 'text-emerald-600' : 'text-gray-400'
+                      canUse ? 'text-emerald-400' : 'text-gray-500'
                     }`}
                   />
                 </div>
                 <div className="flex-1 text-left">
-                  <p className="font-semibold text-gray-900">{option.label}</p>
-                  <p className="text-sm text-gray-500">{option.description}</p>
+                  <p className="font-semibold text-gray-100">{option.label}</p>
+                  <p className="text-sm text-gray-400">{option.description}</p>
                 </div>
               </button>
             );
@@ -229,7 +229,7 @@ function OperationDrawer({
         </div>
 
         {isSubmitting && (
-          <div className="absolute inset-0 bg-white/80 rounded-t-3xl flex items-center justify-center">
+          <div className="absolute inset-0 bg-gray-800/80 rounded-t-3xl flex items-center justify-center">
             <div className="w-8 h-8 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin" />
           </div>
         )}
@@ -245,17 +245,17 @@ function LoadingSkeleton() {
       {[1, 2, 3].map((i) => (
         <div
           key={i}
-          className="bg-white rounded-2xl border-2 border-gray-100 p-5 animate-pulse"
+          className="bg-gray-800 rounded-2xl border-2 border-gray-700 p-5 animate-pulse"
         >
           <div className="flex items-start gap-3 mb-4">
-            <div className="w-12 h-12 rounded-full bg-gray-200" />
+            <div className="w-12 h-12 rounded-full bg-gray-700" />
             <div className="flex-1">
-              <div className="h-6 w-32 bg-gray-200 rounded mb-2" />
-              <div className="h-4 w-24 bg-gray-200 rounded" />
+              <div className="h-6 w-32 bg-gray-700 rounded mb-2" />
+              <div className="h-4 w-24 bg-gray-700 rounded" />
             </div>
           </div>
-          <div className="h-3 bg-gray-200 rounded-full mb-4" />
-          <div className="h-12 bg-gray-200 rounded-xl" />
+          <div className="h-3 bg-gray-700 rounded-full mb-4" />
+          <div className="h-12 bg-gray-700 rounded-xl" />
         </div>
       ))}
     </div>
@@ -266,13 +266,13 @@ function LoadingSkeleton() {
 function EmptyState() {
   return (
     <div className="text-center py-12">
-      <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-        <Dog className="w-10 h-10 text-gray-400" />
+      <div className="w-20 h-20 bg-gray-800 rounded-full flex items-center justify-center mx-auto mb-4">
+        <Dog className="w-10 h-10 text-gray-500" />
       </div>
-      <h3 className="text-lg font-semibold text-gray-900 mb-2">
+      <h3 className="text-lg font-semibold text-gray-100 mb-2">
         Nenhum ciclo ativo
       </h3>
-      <p className="text-gray-500">
+      <p className="text-gray-400">
         Cadastre clientes e crie ciclos para começar
       </p>
     </div>
@@ -292,19 +292,19 @@ function StatsCard({
   color: 'emerald' | 'orange' | 'blue';
 }) {
   const colorClasses = {
-    emerald: 'bg-emerald-100 text-emerald-600',
-    orange: 'bg-orange-100 text-orange-600',
-    blue: 'bg-blue-100 text-blue-600',
+    emerald: 'bg-emerald-900/50 text-emerald-400',
+    orange: 'bg-orange-900/50 text-orange-400',
+    blue: 'bg-blue-900/50 text-blue-400',
   };
 
   return (
-    <div className="bg-white rounded-xl border border-gray-100 p-4 flex items-center gap-3">
+    <div className="bg-gray-800 rounded-xl border border-gray-700 p-4 flex items-center gap-3">
       <div className={`w-10 h-10 rounded-full flex items-center justify-center ${colorClasses[color]}`}>
         {icon}
       </div>
       <div>
-        <p className="text-2xl font-bold text-gray-900">{value}</p>
-        <p className="text-xs text-gray-500">{label}</p>
+        <p className="text-2xl font-bold text-gray-100">{value}</p>
+        <p className="text-xs text-gray-400">{label}</p>
       </div>
     </div>
   );
@@ -318,7 +318,7 @@ function RecentActivity() {
     return (
       <div className="space-y-2">
         {[1, 2, 3].map((i) => (
-          <div key={i} className="h-12 bg-gray-100 rounded-xl animate-pulse" />
+          <div key={i} className="h-12 bg-gray-700 rounded-xl animate-pulse" />
         ))}
       </div>
     );
@@ -326,7 +326,7 @@ function RecentActivity() {
 
   if (operations.length === 0) {
     return (
-      <p className="text-center text-gray-500 py-4 text-sm">
+      <p className="text-center text-gray-400 py-4 text-sm">
         Nenhuma atividade recente
       </p>
     );
@@ -335,13 +335,13 @@ function RecentActivity() {
   const getOperationIcon = (type: string) => {
     switch (type) {
       case 'walk':
-        return <Footprints className="w-4 h-4 text-emerald-600" />;
+        return <Footprints className="w-4 h-4 text-emerald-400" />;
       case 'full_day':
-        return <Sun className="w-4 h-4 text-orange-500" />;
+        return <Sun className="w-4 h-4 text-orange-400" />;
       case 'partial':
-        return <Clock className="w-4 h-4 text-blue-500" />;
+        return <Clock className="w-4 h-4 text-blue-400" />;
       default:
-        return <Footprints className="w-4 h-4 text-gray-400" />;
+        return <Footprints className="w-4 h-4 text-gray-500" />;
     }
   };
 
@@ -350,16 +350,16 @@ function RecentActivity() {
       {operations.map((op) => (
         <div
           key={op.id}
-          className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl"
+          className="flex items-center gap-3 p-3 bg-gray-700 rounded-xl"
         >
-          <div className="w-8 h-8 rounded-full bg-white flex items-center justify-center shadow-sm">
+          <div className="w-8 h-8 rounded-full bg-gray-800 flex items-center justify-center shadow-sm">
             {getOperationIcon(op.type)}
           </div>
           <div className="flex-1 min-w-0">
-            <p className="font-medium text-gray-900 text-sm">{formatOperationType(op.type)}</p>
-            <p className="text-xs text-gray-500 truncate">{formatDate(op.date)}</p>
+            <p className="font-medium text-gray-100 text-sm">{formatOperationType(op.type)}</p>
+            <p className="text-xs text-gray-400 truncate">{formatDate(op.date)}</p>
           </div>
-          <span className="text-xs font-medium text-gray-500">-{op.weight}</span>
+          <span className="text-xs font-medium text-gray-400">-{op.weight}</span>
         </div>
       ))}
     </div>
@@ -412,11 +412,11 @@ export function Dashboard() {
   }, [operations, opsLoading]);
 
   return (
-    <div className="min-h-screen bg-gray-50 pb-24">
+    <div className="min-h-screen bg-gray-900 pb-24">
       {/* Header */}
-      <header className="bg-white border-b border-gray-100 px-4 py-4 sticky top-0 z-10">
-        <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
-        <p className="text-sm text-gray-500">
+      <header className="bg-gray-800 border-b border-gray-700 px-4 py-4 sticky top-0 z-10">
+        <h1 className="text-2xl font-bold text-gray-100">Dashboard</h1>
+        <p className="text-sm text-gray-400">
           {packs.length} ciclo{packs.length !== 1 ? 's' : ''} ativo
           {packs.length !== 1 ? 's' : ''}
         </p>
@@ -425,7 +425,7 @@ export function Dashboard() {
       {/* Content */}
       <main className="p-4 space-y-6">
         {error && (
-          <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl">
+          <div className="bg-red-900/50 border border-red-700 text-red-400 px-4 py-3 rounded-xl">
             {error}
           </div>
         )}
@@ -435,14 +435,14 @@ export function Dashboard() {
           <>
             {/* Today's schedule summary */}
             {!scheduleLoading && todayServices.length > 0 && (
-              <div className="bg-blue-50 border border-blue-200 rounded-2xl p-4">
+              <div className="bg-blue-900/30 border border-blue-700 rounded-2xl p-4">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center">
-                    <Calendar className="w-5 h-5 text-blue-600" />
+                  <div className="w-10 h-10 rounded-full bg-blue-900/50 flex items-center justify-center">
+                    <Calendar className="w-5 h-5 text-blue-400" />
                   </div>
                   <div className="flex-1">
-                    <p className="font-bold text-blue-900">Hoje na Agenda</p>
-                    <p className="text-sm text-blue-700">
+                    <p className="font-bold text-blue-300">Hoje na Agenda</p>
+                    <p className="text-sm text-blue-400">
                       {todayServices.length} serviço{todayServices.length !== 1 ? 's' : ''} agendado{todayServices.length !== 1 ? 's' : ''}
                     </p>
                   </div>
@@ -467,23 +467,23 @@ export function Dashboard() {
             </div>
 
             {/* Manejos counters */}
-            <div className="bg-white rounded-2xl border border-gray-100 p-4">
-              <h3 className="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
+            <div className="bg-gray-800 rounded-2xl border border-gray-700 p-4">
+              <h3 className="text-sm font-semibold text-gray-300 mb-3 flex items-center gap-2">
                 <Activity className="w-4 h-4" />
                 Contadores de Manejos
               </h3>
               <div className="grid grid-cols-3 gap-4 text-center">
                 <div>
-                  <p className="text-2xl font-bold text-emerald-600">{monthlyManejos}</p>
-                  <p className="text-xs text-gray-500">Este Mês</p>
+                  <p className="text-2xl font-bold text-emerald-400">{monthlyManejos}</p>
+                  <p className="text-xs text-gray-400">Este Mês</p>
                 </div>
                 <div>
-                  <p className="text-2xl font-bold text-blue-600">{totalCreditsRemaining}</p>
-                  <p className="text-xs text-gray-500">Créditos Restantes</p>
+                  <p className="text-2xl font-bold text-blue-400">{totalCreditsRemaining}</p>
+                  <p className="text-xs text-gray-400">Créditos Restantes</p>
                 </div>
                 <div>
-                  <p className="text-2xl font-bold text-purple-600">{lifetimeManejos}</p>
-                  <p className="text-xs text-gray-500">Total Lifetime</p>
+                  <p className="text-2xl font-bold text-purple-400">{lifetimeManejos}</p>
+                  <p className="text-xs text-gray-400">Total Lifetime</p>
                 </div>
               </div>
             </div>
@@ -492,7 +492,7 @@ export function Dashboard() {
 
         {/* Active Packs */}
         <section>
-          <h2 className="text-lg font-bold text-gray-900 mb-3">Ciclos Ativos</h2>
+          <h2 className="text-lg font-bold text-gray-100 mb-3">Ciclos Ativos</h2>
           {loading ? (
             <LoadingSkeleton />
           ) : packs.length === 0 ? (
@@ -513,8 +513,8 @@ export function Dashboard() {
         {/* Recent Activity */}
         {!loading && packs.length > 0 && (
           <section>
-            <h2 className="text-lg font-bold text-gray-900 mb-3">Atividade Recente</h2>
-            <div className="bg-white rounded-2xl border border-gray-100 p-4">
+            <h2 className="text-lg font-bold text-gray-100 mb-3">Atividade Recente</h2>
+            <div className="bg-gray-800 rounded-2xl border border-gray-700 p-4">
               <RecentActivity />
             </div>
           </section>

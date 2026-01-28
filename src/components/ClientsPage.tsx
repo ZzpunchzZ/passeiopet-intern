@@ -98,20 +98,20 @@ interface ClientCardProps {
 function ClientCard({ client, onClick }: ClientCardProps) {
   return (
     <Card onClick={onClick} className="flex items-center gap-4">
-      <div className="w-14 h-14 rounded-full bg-emerald-100 flex items-center justify-center flex-shrink-0">
-        <Dog className="w-7 h-7 text-emerald-600" />
+      <div className="w-14 h-14 rounded-full bg-emerald-900/50 flex items-center justify-center flex-shrink-0">
+        <Dog className="w-7 h-7 text-emerald-400" />
       </div>
       <div className="flex-1 min-w-0">
-        <h3 className="text-lg font-bold text-gray-900 truncate">{client.petName}</h3>
-        <p className="text-sm text-gray-500 truncate">{client.ownerName}</p>
-        <div className="flex items-center gap-3 mt-1 text-xs text-gray-400">
+        <h3 className="text-lg font-bold text-gray-100 truncate">{client.petName}</h3>
+        <p className="text-sm text-gray-400 truncate">{client.ownerName}</p>
+        <div className="flex items-center gap-3 mt-1 text-xs text-gray-500">
           <span className="flex items-center gap-1">
             <Phone className="w-3 h-3" />
             {client.phone}
           </span>
         </div>
       </div>
-      <ChevronRight className="w-5 h-5 text-gray-400 flex-shrink-0" />
+      <ChevronRight className="w-5 h-5 text-gray-500 flex-shrink-0" />
     </Card>
   );
 }
@@ -121,7 +121,7 @@ function ClientsLoadingSkeleton() {
   return (
     <div className="space-y-3">
       {[1, 2, 3, 4].map((i) => (
-        <div key={i} className="bg-white rounded-2xl border-2 border-gray-100 p-5 flex items-center gap-4">
+        <div key={i} className="bg-gray-800 rounded-2xl border-2 border-gray-700 p-5 flex items-center gap-4">
           <Skeleton className="w-14 h-14 rounded-full" />
           <div className="flex-1">
             <Skeleton className="h-5 w-24 mb-2" />
@@ -241,13 +241,13 @@ export function ClientsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 pb-24">
+    <div className="min-h-screen bg-gray-900 pb-24">
       {/* Header */}
-      <header className="bg-white border-b border-gray-100 px-4 py-4 sticky top-0 z-10">
+      <header className="bg-gray-800 border-b border-gray-700 px-4 py-4 sticky top-0 z-10">
         <div className="flex items-center justify-between mb-3">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">Clientes</h1>
-            <p className="text-sm text-gray-500">
+            <h1 className="text-2xl font-bold text-gray-100">Clientes</h1>
+            <p className="text-sm text-gray-400">
               {activeClients.length} ativo{activeClients.length !== 1 ? 's' : ''}
             </p>
           </div>
@@ -258,13 +258,13 @@ export function ClientsPage() {
 
         {/* Search */}
         <div className="relative">
-          <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+          <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500" />
           <input
             type="text"
             placeholder="Buscar por nome ou telefone..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-12 pr-4 py-3 rounded-xl border-2 border-gray-200 focus:border-emerald-500 focus:outline-none transition-colors"
+            className="w-full pl-12 pr-4 py-3 rounded-xl border-2 border-gray-600 bg-gray-800 text-gray-100 placeholder-gray-500 focus:border-emerald-500 focus:outline-none transition-colors"
           />
         </div>
 
@@ -273,7 +273,7 @@ export function ClientsPage() {
           <button
             onClick={() => setShowArchived(false)}
             className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
-              !showArchived ? 'bg-emerald-100 text-emerald-700' : 'bg-gray-100 text-gray-600'
+              !showArchived ? 'bg-emerald-900/50 text-emerald-400' : 'bg-gray-700 text-gray-400'
             }`}
           >
             Ativos ({activeClients.length})
@@ -281,7 +281,7 @@ export function ClientsPage() {
           <button
             onClick={() => setShowArchived(true)}
             className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
-              showArchived ? 'bg-orange-100 text-orange-700' : 'bg-gray-100 text-gray-600'
+              showArchived ? 'bg-orange-900/50 text-orange-400' : 'bg-gray-700 text-gray-400'
             }`}
           >
             Arquivados ({archivedClients.length})
@@ -292,7 +292,7 @@ export function ClientsPage() {
       {/* Content */}
       <main className="p-4 space-y-3">
         {error && (
-          <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl">
+          <div className="bg-red-900/50 border border-red-700 text-red-400 px-4 py-3 rounded-xl">
             {error}
           </div>
         )}

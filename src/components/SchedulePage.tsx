@@ -56,18 +56,18 @@ interface EmptySlotCardProps {
 
 function EmptySlotCard({ slot, onSchedule }: EmptySlotCardProps) {
   return (
-    <div className="flex items-center gap-4 p-3 bg-gray-50 border border-dashed border-gray-200 rounded-2xl">
-      <div className="flex flex-col items-center justify-center min-w-20 h-14 px-2 rounded-xl bg-gray-100">
+    <div className="flex items-center gap-4 p-3 bg-gray-800 border border-dashed border-gray-600 rounded-2xl">
+      <div className="flex flex-col items-center justify-center min-w-20 h-14 px-2 rounded-xl bg-gray-700">
         <span className="text-sm font-medium text-gray-400">
           {slot.label}
         </span>
       </div>
       <div className="flex-1">
-        <span className="text-sm italic text-gray-400">vago</span>
+        <span className="text-sm italic text-gray-500">vago</span>
       </div>
       <button
         onClick={() => onSchedule(slot.value)}
-        className="p-2 rounded-xl bg-emerald-100 text-emerald-600 hover:bg-emerald-200 transition-colors"
+        className="p-2 rounded-xl bg-emerald-900/50 text-emerald-400 hover:bg-emerald-900 transition-colors"
         title="Agendar neste horário"
       >
         <Plus className="w-5 h-5" />
@@ -98,8 +98,8 @@ function ServiceTypeBadge({ type }: { type: OperationType }) {
     <span
       className={`px-2 py-0.5 text-[10px] font-semibold rounded-full ${
         isSitter
-          ? 'bg-purple-100 text-purple-700'
-          : 'bg-blue-100 text-blue-700'
+          ? 'bg-purple-900/50 text-purple-400'
+          : 'bg-blue-900/50 text-blue-400'
       }`}
     >
       {isSitter ? '🏠 Sitter' : '🦮 Passeio'}
@@ -263,16 +263,16 @@ function ScheduleForm({ clients, onSubmit, onClose, isLoading, initialDate, init
       />
 
       {formData.clientId && activePacks.length > 0 && (
-        <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-3">
-          <p className="text-sm text-emerald-800">
+        <div className="bg-emerald-900/30 border border-emerald-700 rounded-xl p-3">
+          <p className="text-sm text-emerald-400">
             Ciclo ativo: {activePacks[0].totalCredits - activePacks[0].usedCredits} créditos restantes
           </p>
         </div>
       )}
 
       {formData.clientId && activePacks.length === 0 && (
-        <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-3">
-          <p className="text-sm text-yellow-800">
+        <div className="bg-yellow-900/30 border border-yellow-700 rounded-xl p-3">
+          <p className="text-sm text-yellow-400">
             ⚠️ Cliente sem ciclo ativo. O serviço será registrado como avulso.
           </p>
         </div>
@@ -313,43 +313,43 @@ function ScheduleForm({ clients, onSubmit, onClose, isLoading, initialDate, init
 
       {/* Checkbox Extra - apenas se tiver ciclo ativo */}
       {formData.clientId && activePacks.length > 0 && (
-        <label className="flex items-center gap-3 p-3 rounded-xl border-2 border-orange-200 bg-orange-50 cursor-pointer hover:border-orange-300 transition-all">
+        <label className="flex items-center gap-3 p-3 rounded-xl border-2 border-orange-700 bg-orange-900/30 cursor-pointer hover:border-orange-600 transition-all">
           <input
             type="checkbox"
             checked={formData.isExtra}
             onChange={(e) => setFormData({ ...formData, isExtra: e.target.checked })}
-            className="w-5 h-5 rounded border-orange-300 text-orange-500 focus:ring-orange-500"
+            className="w-5 h-5 rounded border-orange-600 text-orange-500 focus:ring-orange-500 bg-gray-800"
           />
           <div className="flex-1">
-            <span className="font-medium text-orange-800">Passeio Extra</span>
-            <p className="text-xs text-orange-600 mt-0.5">
+            <span className="font-medium text-orange-400">Passeio Extra</span>
+            <p className="text-xs text-orange-500 mt-0.5">
               Serviço adicional fora do pacote. Será cobrado no próximo ciclo.
             </p>
           </div>
-          <span className="px-2 py-1 bg-orange-200 text-orange-700 text-xs font-bold rounded-full">
+          <span className="px-2 py-1 bg-orange-700 text-orange-200 text-xs font-bold rounded-full">
             EXTRA
           </span>
         </label>
       )}
 
       {/* Toggle de Recorrência */}
-      <div className="border-t border-gray-200 pt-4 mt-4">
+      <div className="border-t border-gray-700 pt-4 mt-4">
         <button
           type="button"
           onClick={() => setIsRecurring(!isRecurring)}
           className={`flex items-center gap-2 w-full p-3 rounded-xl border-2 transition-all ${
             isRecurring
-              ? 'border-emerald-500 bg-emerald-50'
-              : 'border-gray-200 bg-gray-50 hover:border-gray-300'
+              ? 'border-emerald-600 bg-emerald-900/30'
+              : 'border-gray-600 bg-gray-800 hover:border-gray-500'
           }`}
         >
-          <Repeat className={`w-5 h-5 ${isRecurring ? 'text-emerald-600' : 'text-gray-400'}`} />
-          <span className={`font-medium ${isRecurring ? 'text-emerald-700' : 'text-gray-600'}`}>
+          <Repeat className={`w-5 h-5 ${isRecurring ? 'text-emerald-400' : 'text-gray-500'}`} />
+          <span className={`font-medium ${isRecurring ? 'text-emerald-400' : 'text-gray-400'}`}>
             Agendamento Recorrente
           </span>
           <div
             className={`ml-auto w-10 h-6 rounded-full transition-colors ${
-              isRecurring ? 'bg-emerald-500' : 'bg-gray-300'
+              isRecurring ? 'bg-emerald-600' : 'bg-gray-600'
             }`}
           >
             <div
@@ -362,10 +362,10 @@ function ScheduleForm({ clients, onSubmit, onClose, isLoading, initialDate, init
 
         {/* Configurações de Recorrência */}
         {isRecurring && (
-          <div className="mt-4 space-y-4 p-4 bg-gray-50 rounded-xl border border-gray-200">
+          <div className="mt-4 space-y-4 p-4 bg-gray-800 rounded-xl border border-gray-700">
             {/* Dias da semana */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-gray-300 mb-2">
                 Dias da semana
               </label>
               <div className="flex gap-1">
@@ -376,8 +376,8 @@ function ScheduleForm({ clients, onSubmit, onClose, isLoading, initialDate, init
                     onClick={() => toggleWeekday(day.value)}
                     className={`flex-1 py-2 px-1 text-xs font-medium rounded-lg transition-all ${
                       selectedWeekdays.includes(day.value)
-                        ? 'bg-emerald-500 text-white'
-                        : 'bg-white border border-gray-200 text-gray-600 hover:border-emerald-300'
+                        ? 'bg-emerald-600 text-white'
+                        : 'bg-gray-700 border border-gray-600 text-gray-400 hover:border-emerald-500'
                     }`}
                     title={day.fullLabel}
                   >
@@ -386,7 +386,7 @@ function ScheduleForm({ clients, onSubmit, onClose, isLoading, initialDate, init
                 ))}
               </div>
               {errors.weekdays && (
-                <p className="text-xs text-red-500 mt-1">{errors.weekdays}</p>
+                <p className="text-xs text-red-400 mt-1">{errors.weekdays}</p>
               )}
             </div>
 
@@ -402,11 +402,11 @@ function ScheduleForm({ clients, onSubmit, onClose, isLoading, initialDate, init
 
             {/* Preview de agendamentos */}
             {selectedWeekdays.length > 0 && recurrenceEndDate && recurrenceEndDate > formData.scheduledDate && (
-              <div className="bg-blue-50 border border-blue-200 rounded-xl p-3">
-                <p className="text-sm text-blue-800">
+              <div className="bg-blue-900/30 border border-blue-700 rounded-xl p-3">
+                <p className="text-sm text-blue-400">
                   📅 Serão criados <strong>{generateRecurringDates().length}</strong> agendamentos
                 </p>
-                <p className="text-xs text-blue-600 mt-1">
+                <p className="text-xs text-blue-500 mt-1">
                   {selectedWeekdays.map(d => WEEKDAYS.find(w => w.value === d)?.fullLabel).join(', ')}
                 </p>
               </div>
@@ -417,11 +417,11 @@ function ScheduleForm({ clients, onSubmit, onClose, isLoading, initialDate, init
 
       {/* Progresso de criação de recorrência */}
       {isSubmittingRecurrence && (
-        <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-3">
-          <p className="text-sm text-emerald-800 font-medium">
+        <div className="bg-emerald-900/30 border border-emerald-700 rounded-xl p-3">
+          <p className="text-sm text-emerald-400 font-medium">
             Criando agendamentos... {recurrenceProgress.current}/{recurrenceProgress.total}
           </p>
-          <div className="mt-2 h-2 bg-emerald-200 rounded-full overflow-hidden">
+          <div className="mt-2 h-2 bg-emerald-900 rounded-full overflow-hidden">
             <div
               className="h-full bg-emerald-500 transition-all duration-300"
               style={{ width: `${(recurrenceProgress.current / recurrenceProgress.total) * 100}%` }}
@@ -457,96 +457,104 @@ function ServiceCard({ service, onComplete, onNotDone, isSubmitting }: ServiceCa
 
   // Determine card styling based on status
   const getCardClass = () => {
-    if (isCompleted) return 'bg-emerald-50 border-emerald-200 opacity-75';
-    if (isNotDone) return 'bg-red-50 border-red-200 opacity-75';
-    return '';
+    if (isCompleted) return 'bg-emerald-900/20 border-emerald-700/50 opacity-80';
+    if (isNotDone) return 'bg-red-900/20 border-red-700/50 opacity-80';
+    return 'hover:border-gray-600';
   };
 
   // Determine time slot styling based on status
   const getTimeSlotClass = () => {
-    if (isCompleted) return 'bg-emerald-100';
-    if (isNotDone) return 'bg-red-100';
-    return 'bg-blue-100';
+    if (isCompleted) return 'bg-emerald-900/60 border-emerald-600/50';
+    if (isNotDone) return 'bg-red-900/60 border-red-600/50';
+    return 'bg-amber-900/60 border-amber-600/50';
   };
 
   const getTimeTextClass = () => {
-    if (isCompleted) return 'text-emerald-700';
-    if (isNotDone) return 'text-red-700';
-    return 'text-blue-700';
+    if (isCompleted) return 'text-emerald-300';
+    if (isNotDone) return 'text-red-300';
+    return 'text-amber-300';
   };
 
   const getSubTextClass = () => {
-    if (isCompleted) return 'text-emerald-600';
-    if (isNotDone) return 'text-red-600';
-    return 'text-blue-600';
+    if (isCompleted) return 'text-emerald-400/80';
+    if (isNotDone) return 'text-red-400/80';
+    return 'text-amber-400/80';
   };
 
   return (
-    <Card className={`transition-all ${getCardClass()}`}>
-      <div className="flex items-start gap-3">
-        {/* Pet avatar */}
-        <PetAvatar
-          photoUrl={service.client.photoUrl}
-          petName={service.client.petName}
-          size="sm"
-        />
-
+    <Card className={`transition-all duration-200 ${getCardClass()}`}>
+      <div className="flex items-center gap-4">
         {/* Time slot badge */}
         <div
-          className={`flex flex-col items-center justify-center min-w-16 h-10 px-2 rounded-xl ${getTimeSlotClass()}`}
+          className={`flex flex-col items-center justify-center min-w-28 py-2 px-3 rounded-xl border ${getTimeSlotClass()}`}
         >
-          <span className={`text-xs font-bold text-center ${getTimeTextClass()}`}>
+          <span className={`text-sm font-bold ${getTimeTextClass()}`}>
             {formatTimeSlot(service.scheduledTime)}
           </span>
-          <span className={`text-[10px] ${getSubTextClass()}`}>
+          <span className={`text-[10px] font-medium uppercase tracking-wide ${getSubTextClass()}`}>
             {formatOperationType(service.type)}
           </span>
         </div>
 
-        {/* Service info */}
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 flex-wrap">
-            <h3 className="text-lg font-bold text-gray-900 truncate">
-              {service.client.petName}
-            </h3>
-            <ServiceTypeBadge type={service.type} />
+        {/* Service info - vertical layout */}
+        <div className="flex-1 min-w-0 space-y-1">
+          {/* Pet name */}
+          <h3 className="text-lg font-bold text-gray-100">
+            {service.client.petName}
             {service.isExtra && (
-              <span className="px-2 py-0.5 bg-orange-500 text-white text-xs font-bold rounded-full">
-                EXTRA
+              <span className="ml-2 px-2 py-0.5 bg-orange-500/80 text-white text-[10px] font-bold rounded-full uppercase tracking-wide">
+                Extra
               </span>
             )}
-            {isCompleted && (
-              <span className="px-2 py-0.5 bg-emerald-500 text-white text-xs font-medium rounded-full flex items-center gap-1">
-                <Check className="w-3 h-3" />
-                OK
-              </span>
-            )}
-            {isNotDone && (
-              <span className="px-2 py-0.5 bg-red-500 text-white text-xs font-medium rounded-full flex items-center gap-1">
-                <X className="w-3 h-3" />
-                Não Realizado
-              </span>
-            )}
-          </div>
-          <p className="text-sm text-gray-500 truncate">{service.client.ownerName}</p>
+          </h3>
+          
+          {/* Service type badge */}
+          <ServiceTypeBadge type={service.type} />
+          
+          {/* Owner name */}
+          <p className="text-sm text-gray-400">{service.client.ownerName}</p>
+          
+          {/* Address - clickable to Google Maps */}
           {service.client.address && (
-            <div className="flex items-center gap-1 mt-1 text-xs text-gray-400">
-              <MapPin className="w-3 h-3" />
-              <span className="truncate">{service.client.address}</span>
-            </div>
+            <a
+              href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(service.client.address)}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1.5 text-xs text-blue-400 hover:text-blue-300 transition-colors"
+            >
+              <MapPin className="w-3 h-3 flex-shrink-0" />
+              <span className="truncate underline underline-offset-2">{service.client.address}</span>
+              <ExternalLink className="w-3 h-3 flex-shrink-0" />
+            </a>
           )}
+          
+          {/* Notes */}
           {service.notes && (
-            <p className="text-xs text-orange-600 mt-1 truncate">📝 {service.notes}</p>
+            <p className="text-xs text-orange-400/90 truncate italic">📝 {service.notes}</p>
+          )}
+          
+          {/* Status indicators for completed/not done */}
+          {isCompleted && (
+            <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-emerald-600 text-white text-xs font-medium rounded-full">
+              <Check className="w-3 h-3" />
+              Realizado
+            </span>
+          )}
+          {isNotDone && (
+            <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-red-600 text-white text-xs font-medium rounded-full">
+              <X className="w-3 h-3" />
+              Não Realizado
+            </span>
           )}
         </div>
 
-        {/* Action buttons - only show for pending services */}
+        {/* Action buttons - vertical layout, only show for pending services */}
         {isPending && (
-          <div className="flex gap-2">
+          <div className="flex flex-col gap-2 flex-shrink-0">
             <button
               onClick={onNotDone}
               disabled={isSubmitting}
-              className="p-2 rounded-xl bg-red-100 text-red-600 hover:bg-red-200 transition-colors disabled:opacity-50"
+              className="w-10 h-10 flex items-center justify-center rounded-xl bg-red-900/40 text-red-400 hover:bg-red-800 hover:text-red-300 transition-all disabled:opacity-50 border border-red-700/50"
               title="Marcar como não realizado"
             >
               <X className="w-5 h-5" />
@@ -554,7 +562,7 @@ function ServiceCard({ service, onComplete, onNotDone, isSubmitting }: ServiceCa
             <button
               onClick={onComplete}
               disabled={isSubmitting}
-              className="p-2 rounded-xl bg-emerald-500 text-white hover:bg-emerald-600 transition-colors disabled:opacity-50"
+              className="w-10 h-10 flex items-center justify-center rounded-xl bg-emerald-600 text-white hover:bg-emerald-500 transition-all disabled:opacity-50 shadow-lg shadow-emerald-900/50"
               title="Marcar como realizado"
             >
               <Check className="w-5 h-5" />
@@ -571,7 +579,7 @@ function LoadingSkeleton() {
   return (
     <div className="space-y-3">
       {[1, 2, 3].map((i) => (
-        <div key={i} className="bg-white rounded-2xl border-2 border-gray-100 p-5 flex gap-4">
+        <div key={i} className="bg-gray-800 rounded-2xl border-2 border-gray-700 p-5 flex gap-4">
           <Skeleton className="w-16 h-16 rounded-xl" />
           <div className="flex-1">
             <Skeleton className="h-5 w-24 mb-2" />
@@ -762,14 +770,14 @@ export function SchedulePage() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 pb-24">
+    <div className="min-h-screen bg-gray-900 pb-24">
       {/* Header */}
-      <header className="bg-white border-b border-gray-100 px-4 py-4 sticky top-0 z-10">
+      <header className="bg-gray-800 border-b border-gray-700 px-4 py-4 sticky top-0 z-10">
         <div className="flex items-center justify-between mb-3">
-          <h1 className="text-2xl font-bold text-gray-900">Agenda</h1>
+          <h1 className="text-2xl font-bold text-gray-100">Agenda</h1>
           <button
             onClick={handleOpenForm}
-            className="flex items-center gap-2 px-4 py-2 bg-emerald-500 text-white rounded-xl font-medium hover:bg-emerald-600 transition-colors"
+            className="flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white rounded-xl font-medium hover:bg-emerald-500 transition-colors"
           >
             <Plus className="w-4 h-4" />
             <span>Agendar</span>
@@ -777,18 +785,18 @@ export function SchedulePage() {
         </div>
 
         {/* Date navigation */}
-        <div className="flex items-center justify-between bg-gray-100 rounded-xl p-2">
+        <div className="flex items-center justify-between bg-gray-700 rounded-xl p-2">
           <button
             onClick={() => setSelectedDate(prev)}
-            className="p-2 rounded-lg hover:bg-white transition-colors"
+            className="p-2 rounded-lg hover:bg-gray-600 transition-colors"
           >
-            <ChevronLeft className="w-5 h-5 text-gray-600" />
+            <ChevronLeft className="w-5 h-5 text-gray-300" />
           </button>
           <div className="text-center">
-            <p className="font-bold text-gray-900 capitalize">
+            <p className="font-bold text-gray-100 capitalize">
               {formatHeaderDate(selectedDate)}
             </p>
-            <p className="text-xs text-gray-500">
+            <p className="text-xs text-gray-400">
               {new Intl.DateTimeFormat('pt-BR', {
                 day: '2-digit',
                 month: '2-digit',
@@ -798,9 +806,9 @@ export function SchedulePage() {
           </div>
           <button
             onClick={() => setSelectedDate(next)}
-            className="p-2 rounded-lg hover:bg-white transition-colors"
+            className="p-2 rounded-lg hover:bg-gray-600 transition-colors"
           >
-            <ChevronRight className="w-5 h-5 text-gray-600" />
+            <ChevronRight className="w-5 h-5 text-gray-300" />
           </button>
         </div>
       </header>
@@ -808,7 +816,7 @@ export function SchedulePage() {
       {/* Content */}
       <main className="p-4 space-y-6">
         {error && (
-          <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl">
+          <div className="bg-red-900/50 border border-red-700 text-red-400 px-4 py-3 rounded-xl">
             {error}
           </div>
         )}
@@ -819,7 +827,7 @@ export function SchedulePage() {
           <>
             {/* All time slots */}
             <section>
-              <h2 className="text-lg font-bold text-gray-900 mb-3">
+              <h2 className="text-lg font-bold text-gray-100 mb-3">
                 Horários do Dia
               </h2>
               <div className="space-y-3">
@@ -846,7 +854,7 @@ export function SchedulePage() {
             {/* Services without specific slot (e.g., Diária) */}
             {servicesWithoutSlot.length > 0 && (
               <section>
-                <h2 className="text-lg font-bold text-gray-900 mb-3">
+                <h2 className="text-lg font-bold text-gray-100 mb-3">
                   Sem Horário Fixo
                 </h2>
                 <div className="space-y-3">
@@ -867,14 +875,14 @@ export function SchedulePage() {
 
         {/* Google Calendar link */}
         {pendingServices.length > 0 && (
-          <div className="bg-white rounded-2xl border border-gray-100 p-4">
+          <div className="bg-gray-800 rounded-2xl border border-gray-700 p-4">
             <button
               onClick={() => {
                 if (pendingServices.length > 0) {
                   openGoogleCalendar(pendingServices[0]);
                 }
               }}
-              className="w-full flex items-center justify-center gap-2 text-blue-600 font-medium"
+              className="w-full flex items-center justify-center gap-2 text-blue-400 font-medium"
             >
               <ExternalLink className="w-4 h-4" />
               Abrir no Google Calendar

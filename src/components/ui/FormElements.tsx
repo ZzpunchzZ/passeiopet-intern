@@ -9,16 +9,16 @@ interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
 export function Input({ label, error, className = '', ...props }: InputProps) {
   return (
     <div className="space-y-1">
-      <label className="block text-sm font-medium text-gray-700">{label}</label>
+      <label className="block text-sm font-medium text-gray-300">{label}</label>
       <input
-        className={`w-full px-4 py-3 rounded-xl border-2 transition-colors focus:outline-none focus:ring-0 ${
+        className={`w-full px-4 py-3 rounded-xl border-2 transition-colors focus:outline-none focus:ring-0 bg-gray-800 text-gray-100 placeholder-gray-500 ${
           error
-            ? 'border-red-300 focus:border-red-500'
-            : 'border-gray-200 focus:border-emerald-500'
+            ? 'border-red-500 focus:border-red-400'
+            : 'border-gray-600 focus:border-emerald-500'
         } ${className}`}
         {...props}
       />
-      {error && <p className="text-sm text-red-500">{error}</p>}
+      {error && <p className="text-sm text-red-400">{error}</p>}
     </div>
   );
 }
@@ -32,17 +32,17 @@ interface TextareaProps extends TextareaHTMLAttributes<HTMLTextAreaElement> {
 export function Textarea({ label, error, className = '', ...props }: TextareaProps) {
   return (
     <div className="space-y-1">
-      <label className="block text-sm font-medium text-gray-700">{label}</label>
+      <label className="block text-sm font-medium text-gray-300">{label}</label>
       <textarea
-        className={`w-full px-4 py-3 rounded-xl border-2 transition-colors focus:outline-none focus:ring-0 resize-none ${
+        className={`w-full px-4 py-3 rounded-xl border-2 transition-colors focus:outline-none focus:ring-0 resize-none bg-gray-800 text-gray-100 placeholder-gray-500 ${
           error
-            ? 'border-red-300 focus:border-red-500'
-            : 'border-gray-200 focus:border-emerald-500'
+            ? 'border-red-500 focus:border-red-400'
+            : 'border-gray-600 focus:border-emerald-500'
         } ${className}`}
         rows={4}
         {...props}
       />
-      {error && <p className="text-sm text-red-500">{error}</p>}
+      {error && <p className="text-sm text-red-400">{error}</p>}
     </div>
   );
 }
@@ -63,12 +63,12 @@ interface SelectProps extends Omit<SelectHTMLAttributes<HTMLSelectElement>, 'chi
 export function Select({ label, options, error, placeholder, className = '', ...props }: SelectProps) {
   return (
     <div className="space-y-1">
-      <label className="block text-sm font-medium text-gray-700">{label}</label>
+      <label className="block text-sm font-medium text-gray-300">{label}</label>
       <select
-        className={`w-full px-4 py-3 rounded-xl border-2 transition-colors focus:outline-none focus:ring-0 appearance-none bg-white ${
+        className={`w-full px-4 py-3 rounded-xl border-2 transition-colors focus:outline-none focus:ring-0 appearance-none bg-gray-800 text-gray-100 ${
           error
-            ? 'border-red-300 focus:border-red-500'
-            : 'border-gray-200 focus:border-emerald-500'
+            ? 'border-red-500 focus:border-red-400'
+            : 'border-gray-600 focus:border-emerald-500'
         } ${className}`}
         {...props}
       >
@@ -83,7 +83,7 @@ export function Select({ label, options, error, placeholder, className = '', ...
           </option>
         ))}
       </select>
-      {error && <p className="text-sm text-red-500">{error}</p>}
+      {error && <p className="text-sm text-red-400">{error}</p>}
     </div>
   );
 }
@@ -107,10 +107,10 @@ export function Button({
   ...props
 }: ButtonProps) {
   const variantClasses = {
-    primary: 'bg-emerald-500 hover:bg-emerald-600 text-white',
-    secondary: 'bg-gray-100 hover:bg-gray-200 text-gray-700',
-    danger: 'bg-red-500 hover:bg-red-600 text-white',
-    ghost: 'bg-transparent hover:bg-gray-100 text-gray-700',
+    primary: 'bg-emerald-600 hover:bg-emerald-500 text-white',
+    secondary: 'bg-gray-700 hover:bg-gray-600 text-gray-200',
+    danger: 'bg-red-600 hover:bg-red-500 text-white',
+    ghost: 'bg-transparent hover:bg-gray-700 text-gray-300',
   };
 
   const sizeClasses = {
@@ -145,11 +145,11 @@ interface BadgeProps {
 
 export function Badge({ children, variant = 'default' }: BadgeProps) {
   const variantClasses = {
-    success: 'bg-emerald-100 text-emerald-700',
-    warning: 'bg-orange-100 text-orange-700',
-    danger: 'bg-red-100 text-red-700',
-    info: 'bg-blue-100 text-blue-700',
-    default: 'bg-gray-100 text-gray-700',
+    success: 'bg-emerald-900/50 text-emerald-400',
+    warning: 'bg-orange-900/50 text-orange-400',
+    danger: 'bg-red-900/50 text-red-400',
+    info: 'bg-blue-900/50 text-blue-400',
+    default: 'bg-gray-700 text-gray-300',
   };
 
   return (
@@ -172,11 +172,11 @@ interface EmptyStateProps {
 export function EmptyState({ icon, title, description, action }: EmptyStateProps) {
   return (
     <div className="text-center py-12">
-      <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+      <div className="w-20 h-20 bg-gray-800 rounded-full flex items-center justify-center mx-auto mb-4">
         {icon}
       </div>
-      <h3 className="text-lg font-semibold text-gray-900 mb-2">{title}</h3>
-      <p className="text-gray-500 mb-4">{description}</p>
+      <h3 className="text-lg font-semibold text-gray-100 mb-2">{title}</h3>
+      <p className="text-gray-400 mb-4">{description}</p>
       {action}
     </div>
   );
@@ -184,7 +184,7 @@ export function EmptyState({ icon, title, description, action }: EmptyStateProps
 
 // Loading skeleton
 export function Skeleton({ className = '' }: { className?: string }) {
-  return <div className={`bg-gray-200 rounded animate-pulse ${className}`} />;
+  return <div className={`bg-gray-700 rounded animate-pulse ${className}`} />;
 }
 
 // Card component
@@ -197,8 +197,8 @@ interface CardProps {
 export function Card({ children, className = '', onClick }: CardProps) {
   return (
     <div
-      className={`bg-white rounded-2xl shadow-sm border-2 border-gray-100 p-5 ${
-        onClick ? 'cursor-pointer hover:border-emerald-200 transition-colors' : ''
+      className={`bg-gray-800 rounded-2xl shadow-sm border-2 border-gray-700 p-5 ${
+        onClick ? 'cursor-pointer hover:border-emerald-600 transition-colors' : ''
       } ${className}`}
       onClick={onClick}
     >
