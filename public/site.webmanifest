@@ -1,6 +1,6 @@
 {
-  "name": "MyWebSite",
-  "short_name": "MySite",
+  "name": "Passeio Pet",
+  "short_name": "PasseioPet",
   "icons": [
     {
       "src": "/web-app-manifest-192x192.png",
@@ -13,9 +13,15 @@
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "maskable"
+    },
+    {
+      "src": "/apple-touch-icon.png",
+      "sizes": "180x180",
+      "type": "image/png",
+      "purpose": "any"
     }
   ],
-  "theme_color": "#ffffff",
-  "background_color": "#ffffff",
+  "theme_color": "#3b82f6",
+  "background_color": "#0f172a",
   "display": "standalone"
 }

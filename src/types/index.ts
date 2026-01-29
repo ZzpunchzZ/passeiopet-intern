@@ -41,6 +41,9 @@ export interface Pack {
   paymentDate?: Timestamp | null; // Data em que o pagamento foi realizado
   isActive: boolean; // Se o ciclo está ativo ou encerrado
   cycleNumber?: number; // Número sequencial do ciclo para o cliente
+  // Campos de duração/plano
+  walkDuration?: ServiceDuration; // Duração padrão do passeio (para serviço walk)
+  sitterPlan?: SitterPlan; // Plano de visita para Pet Sitter
 }
 
 export interface Operation {
@@ -55,6 +58,24 @@ export interface Operation {
 
 // Durações possíveis para serviços (em minutos)
 export type ServiceDuration = 30 | 60 | 90 | 120;
+
+// Planos de Pet Sitter (visitas)
+export type SitterPlan = 'visita_rapida' | 'visita_media' | 'visita_longa';
+
+// Mapeamento de planos para duração e labels
+export const SITTER_PLAN_OPTIONS: { value: SitterPlan; label: string; duration: number }[] = [
+  { value: 'visita_rapida', label: 'Visita Rápida (15min)', duration: 15 },
+  { value: 'visita_media', label: 'Visita Média (30min)', duration: 30 },
+  { value: 'visita_longa', label: 'Visita Longa (50min)', duration: 50 },
+];
+
+// Mapeamento de duração de passeio para label
+export const WALK_DURATION_OPTIONS: { value: ServiceDuration; label: string }[] = [
+  { value: 30, label: '30 min' },
+  { value: 60, label: '1 hora' },
+  { value: 90, label: '1h30' },
+  { value: 120, label: '2 horas' },
+];
 
 // Agendamento de serviços (Agenda)
 export interface ScheduledService {

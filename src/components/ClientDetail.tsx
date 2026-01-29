@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import confetti from 'canvas-confetti';
 import {
   ArrowLeft,
@@ -28,7 +28,8 @@ import { useSchedule } from '../hooks/useSchedule';
 import { Drawer } from './ui/Modal';
 import { Input, Select, Button, Badge, Card, EmptyState, Skeleton } from './ui/FormElements';
 import { PetAvatar } from './ui/PetAvatar';
-import type { Client, Pack, PaymentStatus, ServiceType, OperationType, ScheduledServiceWithClient } from '../types';
+import type { Client, Pack, PaymentStatus, ServiceType, OperationType, ScheduledServiceWithClient, ServiceDuration, SitterPlan } from '../types';
+import { SITTER_PLAN_OPTIONS, WALK_DURATION_OPTIONS } from '../types';
 
 interface ClientDetailProps {
   client: Client;
@@ -65,6 +66,8 @@ interface PackFormProps {
     packageValue: number;
     startDate: Date;
     endDate: Date | null;
+    walkDuration?: ServiceDuration;
+    sitterPlan?: SitterPlan;
   }) => Promise<void>;
   onClose: () => void;
   isLoading: boolean;
@@ -78,6 +81,8 @@ function PackForm({ onSubmit, onClose, isLoading }: PackFormProps) {
     packageValue: '',
     startDate: today,
     endDate: '',
+    walkDuration: 60 as ServiceDuration,
+    sitterPlan: 'visita_media' as SitterPlan,
   });
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -85,16 +90,18 @@ function PackForm({ onSubmit, onClose, isLoading }: PackFormProps) {
     const valueInCents = Math.round(parseFloat(formData.packageValue.replace(',', '.')) * 100) || 0;
     await onSubmit({
       serviceType: formData.serviceType,
-      totalCredits: formData.totalCredits,
+      totalCredits: formData.serviceType === 'sitter' ? 9999 : formData.totalCredits, // Ilimitado para sitter
       packageValue: valueInCents,
       startDate: new Date(formData.startDate),
       endDate: formData.endDate ? new Date(formData.endDate) : null,
+      walkDuration: formData.serviceType === 'walk' ? formData.walkDuration : undefined,
+      sitterPlan: formData.serviceType === 'sitter' ? formData.sitterPlan : undefined,
     });
   };
 
   const creditOptions = [4, 8, 12, 16, 20].map((n) => ({
     value: String(n),
-    label: `${n} ${formData.serviceType === 'walk' ? 'passeios' : 'diárias'}`,
+    label: `${n} passeios`,
   }));
 
   return (
@@ -108,12 +115,57 @@ function PackForm({ onSubmit, onClose, isLoading }: PackFormProps) {
           { value: 'sitter', label: 'Pet Sitter (com diária)' },
         ]}
       />
-      <Select
-        label={formData.serviceType === 'walk' ? 'Total de Passeios' : 'Total de Diárias'}
-        value={String(formData.totalCredits)}
-        onChange={(e) => setFormData({ ...formData, totalCredits: Number(e.target.value) })}
-        options={creditOptions}
-      />
+      
+      {/* Para Passeio: mostrar total de passeios e duração padrão */}
+      {formData.serviceType === 'walk' && (
+        <>
+          <Select
+            label="Total de Passeios"
+            value={String(formData.totalCredits)}
+            onChange={(e) => setFormData({ ...formData, totalCredits: Number(e.target.value) })}
+            options={creditOptions}
+          />
+          <div>
+            <label className="block text-sm font-medium text-gray-300 mb-2">
+              Duração do Passeio
+            </label>
+            <div className="grid grid-cols-4 gap-2">
+              {WALK_DURATION_OPTIONS.map((option) => (
+                <button
+                  key={option.value}
+                  type="button"
+                  onClick={() => setFormData({ ...formData, walkDuration: option.value })}
+                  className={`py-2 px-3 text-sm font-medium rounded-xl transition-all ${
+                    formData.walkDuration === option.value
+                      ? 'bg-emerald-600 text-white border-2 border-emerald-500'
+                      : 'bg-gray-700 text-gray-300 border-2 border-gray-600 hover:border-emerald-500'
+                  }`}
+                >
+                  {option.label}
+                </button>
+              ))}
+            </div>
+          </div>
+        </>
+      )}
+
+      {/* Para Pet Sitter: mostrar plano de visita */}
+      {formData.serviceType === 'sitter' && (
+        <>
+          <Select
+            label="Plano de Visita"
+            value={formData.sitterPlan}
+            onChange={(e) => setFormData({ ...formData, sitterPlan: e.target.value as SitterPlan })}
+            options={SITTER_PLAN_OPTIONS.map((p) => ({ value: p.value, label: p.label }))}
+          />
+          <div className="bg-purple-900/30 border border-purple-700 rounded-xl p-3">
+            <p className="text-sm text-purple-400">
+              🏠 Pet Sitter tem diárias ilimitadas. O controle será feito pelo período contratado.
+            </p>
+          </div>
+        </>
+      )}
+
       <Input
         label="Valor do Pacote (R$)"
         type="text"
@@ -162,6 +214,8 @@ interface EditPackFormProps {
     packageValue: number;
     startDate: Date;
     endDate: Date | null;
+    walkDuration?: ServiceDuration;
+    sitterPlan?: SitterPlan;
   }) => Promise<void>;
   onClose: () => void;
   isLoading: boolean;
@@ -179,6 +233,8 @@ function EditPackForm({ pack, onSubmit, onClose, isLoading }: EditPackFormProps)
     packageValue: ((pack.packageValue || 0) / 100).toFixed(2).replace('.', ','),
     startDate: formatDateForInput(pack.startDate),
     endDate: formatDateForInput(pack.endDate),
+    walkDuration: (pack.walkDuration || 60) as ServiceDuration,
+    sitterPlan: (pack.sitterPlan || 'visita_media') as SitterPlan,
   });
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -186,16 +242,18 @@ function EditPackForm({ pack, onSubmit, onClose, isLoading }: EditPackFormProps)
     const valueInCents = Math.round(parseFloat(formData.packageValue.replace(',', '.')) * 100) || 0;
     await onSubmit({
       serviceType: formData.serviceType,
-      totalCredits: formData.totalCredits,
+      totalCredits: formData.serviceType === 'sitter' ? 9999 : formData.totalCredits,
       packageValue: valueInCents,
       startDate: new Date(formData.startDate),
       endDate: formData.endDate ? new Date(formData.endDate) : null,
+      walkDuration: formData.serviceType === 'walk' ? formData.walkDuration : undefined,
+      sitterPlan: formData.serviceType === 'sitter' ? formData.sitterPlan : undefined,
     });
   };
 
   const creditOptions = [4, 8, 12, 16, 20].map((n) => ({
     value: String(n),
-    label: `${n} ${formData.serviceType === 'walk' ? 'passeios' : 'diárias'}`,
+    label: `${n} passeios`,
   }));
 
   return (
@@ -209,12 +267,57 @@ function EditPackForm({ pack, onSubmit, onClose, isLoading }: EditPackFormProps)
           { value: 'sitter', label: 'Pet Sitter (com diária)' },
         ]}
       />
-      <Select
-        label={formData.serviceType === 'walk' ? 'Total de Passeios' : 'Total de Diárias'}
-        value={String(formData.totalCredits)}
-        onChange={(e) => setFormData({ ...formData, totalCredits: Number(e.target.value) })}
-        options={creditOptions}
-      />
+      
+      {/* Para Passeio: mostrar total de passeios e duração padrão */}
+      {formData.serviceType === 'walk' && (
+        <>
+          <Select
+            label="Total de Passeios"
+            value={String(formData.totalCredits)}
+            onChange={(e) => setFormData({ ...formData, totalCredits: Number(e.target.value) })}
+            options={creditOptions}
+          />
+          <div>
+            <label className="block text-sm font-medium text-gray-300 mb-2">
+              Duração do Passeio
+            </label>
+            <div className="grid grid-cols-4 gap-2">
+              {WALK_DURATION_OPTIONS.map((option) => (
+                <button
+                  key={option.value}
+                  type="button"
+                  onClick={() => setFormData({ ...formData, walkDuration: option.value })}
+                  className={`py-2 px-3 text-sm font-medium rounded-xl transition-all ${
+                    formData.walkDuration === option.value
+                      ? 'bg-emerald-600 text-white border-2 border-emerald-500'
+                      : 'bg-gray-700 text-gray-300 border-2 border-gray-600 hover:border-emerald-500'
+                  }`}
+                >
+                  {option.label}
+                </button>
+              ))}
+            </div>
+          </div>
+        </>
+      )}
+
+      {/* Para Pet Sitter: mostrar plano de visita */}
+      {formData.serviceType === 'sitter' && (
+        <>
+          <Select
+            label="Plano de Visita"
+            value={formData.sitterPlan}
+            onChange={(e) => setFormData({ ...formData, sitterPlan: e.target.value as SitterPlan })}
+            options={SITTER_PLAN_OPTIONS.map((p) => ({ value: p.value, label: p.label }))}
+          />
+          <div className="bg-purple-900/30 border border-purple-700 rounded-xl p-3">
+            <p className="text-sm text-purple-400">
+              🏠 Pet Sitter tem diárias ilimitadas. O controle será feito pelo período contratado.
+            </p>
+          </div>
+        </>
+      )}
+
       <Input
         label="Valor do Pacote (R$)"
         type="text"
@@ -262,10 +365,22 @@ interface PackCardProps {
 
 function PackCard({ pack, onUpdatePayment, onMarkAsPaid, onEdit, onDelete, onClosePack, onPartialPayment }: PackCardProps) {
   const [showMenu, setShowMenu] = useState(false);
-  const remaining = pack.totalCredits - pack.usedCredits;
-  const percentage = (pack.usedCredits / pack.totalCredits) * 100;
-  const isLow = remaining <= 2 && pack.isActive;
-  const isCompleted = !pack.isActive || remaining === 0;
+  const isSitter = pack.serviceType === 'sitter';
+  const remaining = isSitter ? 'ilimitado' : pack.totalCredits - pack.usedCredits;
+  const percentage = isSitter ? 0 : (pack.usedCredits / pack.totalCredits) * 100;
+  const isLow = !isSitter && typeof remaining === 'number' && remaining <= 2 && pack.isActive;
+  const isCompleted = !pack.isActive || (!isSitter && remaining === 0);
+
+  // Get duration/plan label
+  const getDurationLabel = () => {
+    if (pack.serviceType === 'walk') {
+      const option = WALK_DURATION_OPTIONS.find(d => d.value === pack.walkDuration);
+      return option ? option.label : '1 hora';
+    } else {
+      const option = SITTER_PLAN_OPTIONS.find(p => p.value === pack.sitterPlan);
+      return option ? option.label : 'Visita Média';
+    }
+  };
 
   const getPaymentBadge = () => {
     switch (pack.paymentStatus) {
@@ -354,6 +469,13 @@ function PackCard({ pack, onUpdatePayment, onMarkAsPaid, onEdit, onDelete, onClo
         </div>
       </div>
 
+      {/* Duration/Plan Info */}
+      <div className="bg-gray-700/50 rounded-lg px-3 py-2 mb-3 text-sm">
+        <span className="text-gray-300">
+          ⏱️ {getDurationLabel()}
+        </span>
+      </div>
+
       {/* Payment date if paid */}
       {pack.paymentStatus === 'paid' && pack.paymentDate && (
         <div className="bg-emerald-900/30 border border-emerald-700 rounded-lg px-3 py-2 mb-3 text-sm">
@@ -363,23 +485,32 @@ function PackCard({ pack, onUpdatePayment, onMarkAsPaid, onEdit, onDelete, onClo
         </div>
       )}
 
-      {/* Progress bar */}
-      <div className="mb-3">
-        <div className="flex justify-between text-sm mb-1">
-          <span className="text-gray-400">
-            {pack.usedCredits} / {pack.totalCredits} {pack.serviceType === 'walk' ? 'passeios' : 'diárias'}
-          </span>
-          <span className={`font-medium ${isLow ? 'text-orange-400' : 'text-gray-400'}`}>
-            {remaining} restante{remaining !== 1 ? 's' : ''}
-          </span>
+      {/* Progress bar - only for walk type */}
+      {!isSitter && (
+        <div className="mb-3">
+          <div className="flex justify-between text-sm mb-1">
+            <span className="text-gray-400">
+              {pack.usedCredits} / {pack.totalCredits} passeios
+            </span>
+            <span className={`font-medium ${isLow ? 'text-orange-400' : 'text-gray-400'}`}>
+              {remaining} restante{typeof remaining === 'number' && remaining !== 1 ? 's' : ''}
+            </span>
+          </div>
+          <div className="h-2 bg-gray-700 rounded-full overflow-hidden">
+            <div
+              className={`h-full ${getBarColor()} transition-all rounded-full`}
+              style={{ width: `${percentage}%` }}
+            />
+          </div>
         </div>
-        <div className="h-2 bg-gray-700 rounded-full overflow-hidden">
-          <div
-            className={`h-full ${getBarColor()} transition-all rounded-full`}
-            style={{ width: `${percentage}%` }}
-          />
+      )}
+
+      {/* For sitter, show simple count */}
+      {isSitter && (
+        <div className="mb-3 text-sm text-gray-400">
+          <span>🏠 {pack.usedCredits} visitas realizadas</span>
         </div>
-      </div>
+      )}
 
       {/* Actions */}
       <div className="space-y-2">
@@ -430,7 +561,7 @@ function PackCard({ pack, onUpdatePayment, onMarkAsPaid, onEdit, onDelete, onClo
             </Button>
           </div>
         )}
-        {pack.paymentStatus === 'paid' && pack.isActive && remaining === 0 && (
+        {pack.paymentStatus === 'paid' && pack.isActive && !isSitter && remaining === 0 && (
           <Button
             size="sm"
             variant="secondary"
@@ -441,7 +572,7 @@ function PackCard({ pack, onUpdatePayment, onMarkAsPaid, onEdit, onDelete, onClo
             Encerrar Pacote
           </Button>
         )}
-        {pack.isActive && pack.serviceType === 'walk' && remaining > 0 && (
+        {pack.isActive && pack.serviceType === 'walk' && typeof remaining === 'number' && remaining > 0 && (
           <Button
             size="sm"
             variant="ghost"
@@ -449,6 +580,16 @@ function PackCard({ pack, onUpdatePayment, onMarkAsPaid, onEdit, onDelete, onClo
             className="w-full text-gray-500"
           >
             Encerrar Antecipadamente
+          </Button>
+        )}
+        {pack.isActive && isSitter && (
+          <Button
+            size="sm"
+            variant="ghost"
+            onClick={onClosePack}
+            className="w-full text-gray-500"
+          >
+            Encerrar Ciclo
           </Button>
         )}
       </div>
@@ -638,28 +779,65 @@ interface ExportHistoryDrawerProps {
 }
 
 function ExportHistoryDrawer({ client, packs, isOpen, onClose }: ExportHistoryDrawerProps) {
-  const { operations } = useOperations(undefined, client.id, 100);
+  useOperations(undefined, client.id, 100);
   const { allServices } = useSchedule();
   
-  // Get date range defaults (last 30 days)
-  const today = new Date();
-  const thirtyDaysAgo = new Date(today);
-  thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+  // Estado para o ciclo selecionado (por padrão, o ciclo ativo ou o mais recente)
+  const sortedPacks = [...packs].sort((a, b) => {
+    const dateA = a.startDate?.toMillis?.() || 0;
+    const dateB = b.startDate?.toMillis?.() || 0;
+    return dateB - dateA;
+  });
   
-  const [startDate, setStartDate] = useState(thirtyDaysAgo.toISOString().split('T')[0]);
-  const [endDate, setEndDate] = useState(today.toISOString().split('T')[0]);
+  const [selectedPackId, setSelectedPackId] = useState('');
   const [copied, setCopied] = useState(false);
   const [generatedText, setGeneratedText] = useState('');
   const [showCelebration, setShowCelebration] = useState(false);
 
+  // Limpa o estado quando o drawer abre
+  useEffect(() => {
+    if (isOpen) {
+      setGeneratedText('');
+      setCopied(false);
+      setShowCelebration(false);
+    }
+  }, [isOpen]);
+
+  // Atualiza o ciclo selecionado quando os packs carregam ou mudam
+  useEffect(() => {
+    if (packs.length > 0 && !selectedPackId) {
+      const defaultPack = sortedPacks.find(p => p.isActive) || sortedPacks[0];
+      if (defaultPack) {
+        setSelectedPackId(defaultPack.id);
+      }
+    }
+  }, [packs, sortedPacks, selectedPackId]);
+
   // Filter services for this client
   const clientServices = allServices.filter((s) => s.clientId === client.id);
+  
+  // Get selected pack
+  const selectedPack = packs.find(p => p.id === selectedPackId);
 
   // Generate the export text
   const generateExportText = () => {
-    const start = new Date(startDate);
+    if (!selectedPack) {
+      setGeneratedText('Selecione um ciclo para gerar a mensagem.');
+      return '';
+    }
+
+    // Get date range from the selected pack
+    const start = selectedPack.startDate.toDate();
     start.setHours(0, 0, 0, 0);
-    const end = new Date(endDate);
+    
+    // Se o ciclo não foi finalizado (endDate null ou isActive), usar amanhã (d+1) como data final
+    let end: Date;
+    if (!selectedPack.endDate || selectedPack.isActive) {
+      end = new Date();
+      end.setDate(end.getDate() + 1); // d+1
+    } else {
+      end = selectedPack.endDate.toDate();
+    }
     end.setHours(23, 59, 59, 999);
 
     // Combine completed operations and not_done services
@@ -670,60 +848,58 @@ function ExportHistoryDrawer({ client, packs, isOpen, onClose }: ExportHistoryDr
       isExtra?: boolean;
     };
 
-    const historyItems: HistoryItem[] = [
-      ...operations
-        .filter((op) => {
-          const opDate = op.date.toDate();
-          return opDate >= start && opDate <= end;
-        })
-        .map((op) => ({
-          date: op.date.toDate(),
-          status: 'ok' as const,
-          type: op.type,
-          isExtra: false,
-        })),
-      ...clientServices
-        .filter((s) => {
-          const sDate = s.scheduledDate.toDate();
-          return sDate >= start && sDate <= end && (s.status === 'completed' || s.status === 'not_done');
-        })
-        .filter((s) => s.status === 'not_done') // Only add not_done from services (completed already comes from operations)
-        .map((s) => ({
-          date: s.scheduledDate.toDate(),
-          status: 'not_done' as const,
-          type: s.type,
-          isExtra: false,
-        })),
-    ].sort((a, b) => a.date.getTime() - b.date.getTime());
+    // Usar clientServices para obter os serviços com datas corretas
+    const historyItems: HistoryItem[] = clientServices
+      .filter((s) => {
+        const sDate = s.scheduledDate.toDate();
+        return sDate >= start && sDate <= end && (s.status === 'completed' || s.status === 'not_done');
+      })
+      .map((s) => ({
+        date: s.scheduledDate.toDate(),
+        status: s.status === 'completed' ? 'ok' as const : 'not_done' as const,
+        type: s.type,
+        isExtra: s.isExtra || false,
+      }))
+      .sort((a, b) => a.date.getTime() - b.date.getTime());
 
     // Count completed
     const completedCount = historyItems.filter((h) => h.status === 'ok').length;
 
-    // Get active pack info
-    const activePack = packs.find((p) => p.isActive);
-    const packCredits = activePack ? activePack.totalCredits : completedCount;
-    const packValue = activePack ? formatCurrency(activePack.packageValue) : '';
-    const paymentStatus = activePack
-      ? activePack.paymentStatus === 'paid'
-        ? `Pagamento: FEITO em ${activePack.paymentDate ? formatDateDisplay(activePack.paymentDate) : 'N/A'}`
-        : activePack.paymentStatus === 'partial'
-        ? `Pagamento: PARCIAL (${formatCurrency(activePack.paidAmount || 0)})`
-        : 'Pagamento: PENDENTE'
-      : '';
+    // Use selected pack info
+    const packCredits = selectedPack.totalCredits;
+    const packValue = formatCurrency(selectedPack.packageValue);
+    const paymentStatus = selectedPack.paymentStatus === 'paid'
+      ? `Pagamento: FEITO em ${selectedPack.paymentDate ? formatDateDisplay(selectedPack.paymentDate) : 'N/A'}`
+      : selectedPack.paymentStatus === 'partial'
+      ? `Pagamento: PARCIAL (${formatCurrency(selectedPack.paidAmount || 0)})`
+      : 'Pagamento: PENDENTE';
 
     // Format service type info
-    const serviceTypeLabel = activePack?.serviceType === 'sitter' ? 'Pet Sitter' : 'Passeio';
-    const frequencyInfo = activePack
-      ? `${packCredits} ${activePack.serviceType === 'walk' ? 'passeios' : 'diárias'}`
-      : `${completedCount} serviços`;
+    const serviceTypeLabel = selectedPack.serviceType === 'sitter' ? 'Pet Sitter' : 'Passeio';
+    
+    // Gerar info de frequência com base no tipo de serviço
+    let frequencyInfo: string;
+    let durationInfo: string;
+    
+    if (selectedPack.serviceType === 'sitter') {
+      // Para Pet Sitter, mostrar o plano de visita
+      const sitterPlanInfo = SITTER_PLAN_OPTIONS.find(p => p.value === selectedPack.sitterPlan);
+      frequencyInfo = 'diárias ilimitadas';
+      durationInfo = sitterPlanInfo ? sitterPlanInfo.label : 'Visita Média (30min)';
+    } else {
+      // Para Passeio, mostrar a duração
+      const walkDurationInfo = WALK_DURATION_OPTIONS.find(d => d.value === selectedPack.walkDuration);
+      frequencyInfo = `${packCredits} passeios`;
+      durationInfo = walkDurationInfo ? walkDurationInfo.label + ' por passeio' : '1h por passeio';
+    }
 
     // Format the text like in the image
     let text = `🎉 Completamos mais um ciclo de ${serviceTypeLabel.toLowerCase()}s!\n\n`;
     text += `🐕 : ${client.petName}\n`;
     text += `📅 : ${frequencyInfo}\n`;
-    text += `⏱️ : 1h por passeio\n`;
-    if (packValue) text += `💰 : ${packValue}\n`;
-    if (paymentStatus) text += `${paymentStatus}\n`;
+    text += `⏱️ : ${durationInfo}\n`;
+    text += `💰 : ${packValue}\n`;
+    text += `${paymentStatus}\n`;
     text += `\n`;
     text += `Rolês realizados:\n\n`;
 
@@ -741,7 +917,12 @@ function ExportHistoryDrawer({ client, packs, isOpen, onClose }: ExportHistoryDr
     });
 
     text += `\n`;
-    text += `Total: ${completedCount} / ${packCredits}\n\n`;
+    // Para sitter, não mostrar total de créditos (é ilimitado)
+    if (selectedPack.serviceType === 'sitter') {
+      text += `Total: ${completedCount} visitas realizadas\n\n`;
+    } else {
+      text += `Total: ${completedCount} / ${packCredits}\n\n`;
+    }
     text += `Vamos pra mais um mês? 🐾`;
 
     setGeneratedText(text);
@@ -810,11 +991,30 @@ function ExportHistoryDrawer({ client, packs, isOpen, onClose }: ExportHistoryDr
     });
   };
 
-  // Generate text when dates change
-  const handleGenerate = () => {
-    generateExportText();
+  // Generate text and auto-copy
+  const handleGenerate = async () => {
+    const text = generateExportText();
     setShowCelebration(true);
     fireCelebration();
+    
+    // Auto-copy the generated text
+    if (text) {
+      try {
+        await navigator.clipboard.writeText(text);
+        setCopied(true);
+        setTimeout(() => setCopied(false), 3000);
+      } catch (err) {
+        // Fallback for older browsers
+        const textArea = document.createElement('textarea');
+        textArea.value = text;
+        document.body.appendChild(textArea);
+        textArea.select();
+        document.execCommand('copy');
+        document.body.removeChild(textArea);
+        setCopied(true);
+        setTimeout(() => setCopied(false), 3000);
+      }
+    }
     
     // Hide celebration after animation
     setTimeout(() => setShowCelebration(false), 3000);
@@ -823,23 +1023,51 @@ function ExportHistoryDrawer({ client, packs, isOpen, onClose }: ExportHistoryDr
   return (
     <Drawer isOpen={isOpen} onClose={onClose} title="Exportar Histórico" subtitle={`Histórico de ${client.petName}`}>
       <div className="space-y-4">
-        {/* Date Range Selection */}
-        <div className="grid grid-cols-2 gap-3">
-          <Input
-            label="Data Início"
-            type="date"
-            value={startDate}
-            onChange={(e) => setStartDate(e.target.value)}
+        {/* Cycle Selection */}
+        {packs.length > 0 ? (
+          <Select
+            label="Selecionar Ciclo"
+            value={selectedPackId}
+            onChange={(e) => {
+              setSelectedPackId(e.target.value);
+              setGeneratedText(''); // Clear previous text when changing cycle
+            }}
+            options={sortedPacks.map((pack) => {
+              const startStr = formatDateDisplay(pack.startDate);
+              const endStr = formatDateDisplay(pack.endDate);
+              const typeLabel = pack.serviceType === 'walk' ? 'Passeio' : 'Pet Sitter';
+              const activeLabel = pack.isActive ? ' (Ativo)' : '';
+              return {
+                value: pack.id,
+                label: `Ciclo ${pack.cycleNumber || '?'} - ${typeLabel}${activeLabel} (${startStr} - ${endStr})`,
+              };
+            })}
           />
-          <Input
-            label="Data Fim"
-            type="date"
-            value={endDate}
-            onChange={(e) => setEndDate(e.target.value)}
-          />
-        </div>
+        ) : (
+          <div className="bg-yellow-900/30 border border-yellow-700 rounded-xl p-4 text-center">
+            <p className="text-yellow-400">Nenhum ciclo encontrado para este cliente.</p>
+          </div>
+        )}
 
-        <Button onClick={handleGenerate} className="w-full" variant="secondary">
+        {/* Show selected cycle info */}
+        {selectedPack && (
+          <div className="bg-gray-700/50 rounded-xl p-3 text-sm space-y-1">
+            <div className="flex justify-between">
+              <span className="text-gray-400">Tipo:</span>
+              <span className="text-gray-200">{selectedPack.serviceType === 'walk' ? 'Passeio' : 'Pet Sitter'}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-gray-400">Período:</span>
+              <span className="text-gray-200">{formatDateDisplay(selectedPack.startDate)} - {formatDateDisplay(selectedPack.endDate)}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-gray-400">Valor:</span>
+              <span className="text-gray-200">{formatCurrency(selectedPack.packageValue)}</span>
+            </div>
+          </div>
+        )}
+
+        <Button onClick={handleGenerate} className="w-full" variant="secondary" disabled={!selectedPack}>
           🎉 Gerar Mensagem
         </Button>
 
@@ -871,10 +1099,18 @@ function ExportHistoryDrawer({ client, packs, isOpen, onClose }: ExportHistoryDr
             className="flex-1"
             leftIcon={copied ? <CheckCircle className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
             variant={copied ? 'primary' : 'secondary'}
+            disabled={!generatedText}
           >
             {copied ? 'Copiado!' : 'Copiar'}
           </Button>
         </div>
+
+        {/* Copy confirmation toast */}
+        {copied && generatedText && (
+          <div className="bg-emerald-900/50 border border-emerald-600 rounded-xl p-3 text-center">
+            <span className="text-emerald-400 font-medium">✓ Mensagem copiada para a área de transferência!</span>
+          </div>
+        )}
       </div>
     </Drawer>
   );
@@ -1030,6 +1266,8 @@ export function ClientDetail({ client, onBack, onEdit, onArchive }: ClientDetail
     packageValue: number;
     startDate: Date;
     endDate: Date | null;
+    walkDuration?: ServiceDuration;
+    sitterPlan?: SitterPlan;
   }) => {
     setIsSubmitting(true);
     try {
@@ -1040,6 +1278,8 @@ export function ClientDetail({ client, onBack, onEdit, onArchive }: ClientDetail
         packageValue: data.packageValue,
         startDate: data.startDate,
         endDate: data.endDate,
+        walkDuration: data.walkDuration,
+        sitterPlan: data.sitterPlan,
       });
       setIsPackFormOpen(false);
     } catch (err) {
@@ -1055,6 +1295,8 @@ export function ClientDetail({ client, onBack, onEdit, onArchive }: ClientDetail
     packageValue: number;
     startDate: Date;
     endDate: Date | null;
+    walkDuration?: ServiceDuration;
+    sitterPlan?: SitterPlan;
   }) => {
     if (!editingPack) return;
     setIsSubmitting(true);
@@ -1065,6 +1307,8 @@ export function ClientDetail({ client, onBack, onEdit, onArchive }: ClientDetail
         packageValue: data.packageValue,
         startDate: data.startDate,
         endDate: data.endDate,
+        walkDuration: data.walkDuration,
+        sitterPlan: data.sitterPlan,
       });
       setEditingPack(null);
     } catch (err) {

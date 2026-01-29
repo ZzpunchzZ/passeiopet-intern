@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback } from 'react';
+import { useState, useRef, useCallback, useEffect } from 'react';
 import {
   Plus,
   Clock,
@@ -193,7 +193,7 @@ function ScheduleForm({ clients, onSubmit, onClose, isLoading, initialDate, init
     clientId: '',
     scheduledDate: initialDate || today,
     scheduledTime: initialSlot || '',
-    duration: 30 as ServiceDuration,
+    duration: 60 as ServiceDuration,
     type: 'walk' as OperationType,
     notes: '',
     isExtra: false,
@@ -210,6 +210,16 @@ function ScheduleForm({ clients, onSubmit, onClose, isLoading, initialDate, init
   // Get packs for selected client
   const { packs } = useClientPacks(formData.clientId);
   const activePacks = packs.filter((p) => p.isActive);
+
+  // Atualiza a duração padrão quando o cliente é selecionado baseado no ciclo ativo
+  const activePack = activePacks[0];
+  
+  // Use effect to update duration when client changes and has an active pack with walkDuration
+  useEffect(() => {
+    if (activePack?.walkDuration && activePack.serviceType === 'walk') {
+      setFormData(prev => ({ ...prev, duration: activePack.walkDuration as ServiceDuration }));
+    }
+  }, [activePack?.walkDuration, activePack?.serviceType]);
 
   const validate = () => {
     const newErrors: Record<string, string> = {};

@@ -12,7 +12,7 @@ import {
   getDocs,
 } from 'firebase/firestore';
 import { db, COLLECTIONS } from '../lib/firebase';
-import type { Pack, PaymentStatus, ServiceType } from '../types';
+import type { Pack, PaymentStatus, ServiceType, ServiceDuration, SitterPlan } from '../types';
 
 interface AddPackData {
   clientId: string;
@@ -21,6 +21,8 @@ interface AddPackData {
   packageValue: number;
   startDate?: Date;
   endDate?: Date | null;
+  walkDuration?: ServiceDuration;
+  sitterPlan?: SitterPlan;
 }
 
 interface UpdatePackData {
@@ -29,6 +31,8 @@ interface UpdatePackData {
   packageValue?: number;
   startDate?: Date;
   endDate?: Date | null;
+  walkDuration?: ServiceDuration;
+  sitterPlan?: SitterPlan;
 }
 
 interface UseClientPacksReturn {
@@ -123,6 +127,8 @@ export function useClientPacks(clientId: string | null): UseClientPacksReturn {
         paymentStatus: 'pending' as PaymentStatus,
         isActive: true,
         cycleNumber: nextCycleNumber,
+        walkDuration: data.walkDuration || null,
+        sitterPlan: data.sitterPlan || null,
       });
       console.log('Pack created with ID:', docRef.id, 'Cycle:', nextCycleNumber);
       return docRef.id;
@@ -173,6 +179,8 @@ export function useClientPacks(clientId: string | null): UseClientPacksReturn {
       if (data.endDate !== undefined) {
         updateData.endDate = data.endDate ? Timestamp.fromDate(data.endDate) : null;
       }
+      if (data.walkDuration !== undefined) updateData.walkDuration = data.walkDuration;
+      if (data.sitterPlan !== undefined) updateData.sitterPlan = data.sitterPlan;
       
       await updateDoc(packRef, updateData);
     } catch (err) {
