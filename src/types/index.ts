@@ -53,13 +53,17 @@ export interface Operation {
   isExtra?: boolean; // Indica se é um serviço extra (fora do pacote)
 }
 
+// Durações possíveis para serviços (em minutos)
+export type ServiceDuration = 30 | 60 | 90 | 120;
+
 // Agendamento de serviços (Agenda)
 export interface ScheduledService {
   id: string;
   clientId: string;
   packId?: string; // Pode ser null se for serviço avulso
   scheduledDate: Timestamp;
-  scheduledTime: string; // Formato "HH:mm"
+  scheduledTime: string; // Formato "HH:mm-HH:mm" (slot inicial)
+  duration?: ServiceDuration; // Duração em minutos (padrão: 30)
   type: OperationType;
   status: ScheduleStatus;
   notes?: string;

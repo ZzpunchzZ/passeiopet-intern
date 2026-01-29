@@ -147,6 +147,7 @@ export function useSchedule(): UseScheduleReturn {
     packId?: string;
     scheduledDate: Date;
     scheduledTime: string;
+    duration?: number;
     type: OperationType;
     notes?: string;
   }): Promise<string> => {
@@ -156,6 +157,7 @@ export function useSchedule(): UseScheduleReturn {
         packId: data.packId || null,
         scheduledDate: Timestamp.fromDate(data.scheduledDate),
         scheduledTime: data.scheduledTime,
+        duration: data.duration || 30,
         type: data.type,
         status: 'scheduled' as ScheduleStatus,
         notes: data.notes || '',

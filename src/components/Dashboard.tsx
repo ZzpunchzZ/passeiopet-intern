@@ -1,8 +1,9 @@
 import { useState, useMemo } from 'react';
-import { Dog, X, Footprints, Sun, Clock, AlertTriangle, DollarSign, Calendar, Activity } from 'lucide-react';
+import { Dog, X, Footprints, Sun, Clock, AlertTriangle, DollarSign, Calendar, Activity, Wrench } from 'lucide-react';
 import { usePacks } from '../hooks/usePacks';
 import { useOperations, formatOperationType, formatDate } from '../hooks/useOperations';
 import { useSchedule } from '../hooks/useSchedule';
+import { migrateScheduledServicesToDuration, previewMigration } from '../lib/migrations';
 import type { OperationType, PackWithClient, PaymentStatus } from '../types';
 
 // Format currency for display
@@ -373,6 +374,42 @@ export function Dashboard() {
   const { todayServices, loading: scheduleLoading } = useSchedule();
   const [selectedPack, setSelectedPack] = useState<PackWithClient | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  
+  // Migration state
+  const [migrationStatus, setMigrationStatus] = useState<'idle' | 'previewing' | 'migrating' | 'done'>('idle');
+  const [migrationResult, setMigrationResult] = useState<{
+    total?: number;
+    updated?: number;
+    skipped?: number;
+    errors?: string[];
+    toUpdate?: Array<{ id: string; currentSlot: string; newSlot: string; duration: number }>;
+  } | null>(null);
+
+  const handlePreviewMigration = async () => {
+    setMigrationStatus('previewing');
+    try {
+      const result = await previewMigration();
+      setMigrationResult(result);
+      setMigrationStatus('idle');
+    } catch (err) {
+      console.error('Preview error:', err);
+      setMigrationStatus('idle');
+    }
+  };
+
+  const handleRunMigration = async () => {
+    if (!confirm('Tem certeza que deseja migrar os dados? Esta ação não pode ser desfeita.')) return;
+    
+    setMigrationStatus('migrating');
+    try {
+      const result = await migrateScheduledServicesToDuration();
+      setMigrationResult(result);
+      setMigrationStatus('done');
+    } catch (err) {
+      console.error('Migration error:', err);
+      setMigrationStatus('idle');
+    }
+  };
 
   const handleRegister = async (type: OperationType) => {
     if (!selectedPack) return;
@@ -489,6 +526,65 @@ export function Dashboard() {
             </div>
           </>
         )}
+
+        {/* Migration Tool - temporary */}
+        <section className="bg-yellow-50 border border-yellow-200 rounded-2xl p-4">
+          <h3 className="text-sm font-semibold text-yellow-800 mb-3 flex items-center gap-2">
+            <Wrench className="w-4 h-4" />
+            Migração de Dados (Slots de 30min)
+          </h3>
+          
+          <p className="text-xs text-yellow-700 mb-3">
+            Esta ferramenta atualiza os agendamentos antigos (slots de 1h) para o novo modelo (slots de 30min + duração).
+          </p>
+          
+          <div className="flex gap-2 mb-3">
+            <button
+              onClick={handlePreviewMigration}
+              disabled={migrationStatus !== 'idle'}
+              className="px-3 py-2 bg-yellow-100 text-yellow-800 text-sm font-medium rounded-lg hover:bg-yellow-200 disabled:opacity-50"
+            >
+              {migrationStatus === 'previewing' ? 'Analisando...' : 'Ver Preview'}
+            </button>
+            <button
+              onClick={handleRunMigration}
+              disabled={migrationStatus !== 'idle'}
+              className="px-3 py-2 bg-yellow-600 text-white text-sm font-medium rounded-lg hover:bg-yellow-700 disabled:opacity-50"
+            >
+              {migrationStatus === 'migrating' ? 'Migrando...' : 'Executar Migração'}
+            </button>
+          </div>
+
+          {migrationResult && (
+            <div className="bg-white rounded-lg p-3 text-xs">
+              {migrationResult.toUpdate && (
+                <>
+                  <p className="font-medium text-gray-700">
+                    {migrationResult.toUpdate.length} registros para atualizar
+                  </p>
+                  {migrationResult.toUpdate.slice(0, 5).map((item) => (
+                    <p key={item.id} className="text-gray-500">
+                      {item.currentSlot} → {item.newSlot} ({item.duration}min)
+                    </p>
+                  ))}
+                  {migrationResult.toUpdate.length > 5 && (
+                    <p className="text-gray-400">...e mais {migrationResult.toUpdate.length - 5}</p>
+                  )}
+                </>
+              )}
+              {migrationResult.updated !== undefined && (
+                <div className="text-green-700">
+                  <p>✅ Total: {migrationResult.total}</p>
+                  <p>✅ Atualizados: {migrationResult.updated}</p>
+                  <p>⏭️ Ignorados: {migrationResult.skipped}</p>
+                  {migrationResult.errors && migrationResult.errors.length > 0 && (
+                    <p className="text-red-600">❌ Erros: {migrationResult.errors.length}</p>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
+        </section>
 
         {/* Active Packs */}
         <section>
