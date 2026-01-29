@@ -6,7 +6,8 @@ import {
   Trash2,
   Copy,
   Check,
-  Send,
+  ChevronDown,
+  ChevronUp,
 } from 'lucide-react';
 import { useMessageTemplates } from '../hooks/useMessageTemplates';
 import { Drawer, ConfirmDialog } from './ui/Modal';
@@ -81,24 +82,39 @@ interface TemplateCardProps {
 
 function TemplateCard({ template, onEdit, onDelete, onCopy }: TemplateCardProps) {
   const [copied, setCopied] = useState(false);
+  const [expanded, setExpanded] = useState(false);
 
-  const handleCopy = () => {
+  const handleCopy = (e: React.MouseEvent) => {
+    e.stopPropagation();
     navigator.clipboard.writeText(template.content);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
     onCopy();
   };
 
-  const openWhatsApp = () => {
-    const encodedMessage = encodeURIComponent(template.content);
-    window.open(`https://wa.me/?text=${encodedMessage}`, '_blank');
-  };
-
   return (
-    <Card>
-      <div className="flex items-start justify-between mb-2">
-        <h3 className="font-bold text-gray-100">{template.title}</h3>
-        <div className="flex gap-1">
+    <Card className="!p-3">
+      <div 
+        className="flex items-center justify-between cursor-pointer"
+        onClick={() => setExpanded(!expanded)}
+      >
+        <div className="flex items-center gap-2 flex-1 min-w-0">
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              setExpanded(!expanded);
+            }}
+            className="p-1 text-gray-400"
+          >
+            {expanded ? (
+              <ChevronUp className="w-4 h-4" />
+            ) : (
+              <ChevronDown className="w-4 h-4" />
+            )}
+          </button>
+          <h3 className="font-medium text-gray-100 truncate">{template.title}</h3>
+        </div>
+        <div className="flex gap-1 flex-shrink-0">
           <button
             onClick={handleCopy}
             className="p-2 hover:bg-gray-700 rounded-lg transition-colors"
@@ -111,14 +127,20 @@ function TemplateCard({ template, onEdit, onDelete, onCopy }: TemplateCardProps)
             )}
           </button>
           <button
-            onClick={onEdit}
+            onClick={(e) => {
+              e.stopPropagation();
+              onEdit();
+            }}
             className="p-2 hover:bg-gray-700 rounded-lg transition-colors"
             title="Editar"
           >
             <Edit className="w-4 h-4 text-gray-400" />
           </button>
           <button
-            onClick={onDelete}
+            onClick={(e) => {
+              e.stopPropagation();
+              onDelete();
+            }}
             className="p-2 hover:bg-red-900/40 rounded-lg transition-colors"
             title="Excluir"
           >
@@ -126,7 +148,11 @@ function TemplateCard({ template, onEdit, onDelete, onCopy }: TemplateCardProps)
           </button>
         </div>
       </div>
-      <p className="text-sm text-gray-300 whitespace-pre-wrap mb-3">{template.content}</p>
+      {expanded && (
+        <div className="mt-3 pt-3 border-t border-gray-700">
+          <p className="text-sm text-gray-300 whitespace-pre-wrap">{template.content}</p>
+        </div>
+      )}
     </Card>
   );
 }
@@ -134,12 +160,13 @@ function TemplateCard({ template, onEdit, onDelete, onCopy }: TemplateCardProps)
 // Loading skeleton
 function TemplatesLoadingSkeleton() {
   return (
-    <div className="space-y-3">
-      {[1, 2, 3].map((i) => (
-        <div key={i} className="bg-gray-800 rounded-2xl border-2 border-gray-700 p-5">
-          <Skeleton className="h-5 w-40 mb-3" />
-          <Skeleton className="h-16 w-full mb-3" />
-          <Skeleton className="h-10 w-full" />
+    <div className="space-y-2">
+      {[1, 2, 3, 4, 5].map((i) => (
+        <div key={i} className="bg-gray-800 rounded-2xl border-2 border-gray-700 p-3">
+          <div className="flex items-center justify-between">
+            <Skeleton className="h-5 w-48" />
+            <Skeleton className="h-8 w-24" />
+          </div>
         </div>
       ))}
     </div>

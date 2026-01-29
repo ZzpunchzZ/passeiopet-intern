@@ -28,7 +28,7 @@ import { useSchedule } from '../hooks/useSchedule';
 import { Drawer } from './ui/Modal';
 import { Input, Select, Button, Badge, Card, EmptyState, Skeleton } from './ui/FormElements';
 import { PetAvatar } from './ui/PetAvatar';
-import type { Client, Pack, PaymentStatus, ServiceType, OperationType } from '../types';
+import type { Client, Pack, PaymentStatus, ServiceType, OperationType, ScheduledServiceWithClient } from '../types';
 
 interface ClientDetailProps {
   client: Client;
@@ -74,7 +74,7 @@ function PackForm({ onSubmit, onClose, isLoading }: PackFormProps) {
   const today = new Date().toISOString().split('T')[0];
   const [formData, setFormData] = useState({
     serviceType: 'walk' as ServiceType,
-    totalCredits: 10,
+    totalCredits: 8,
     packageValue: '',
     startDate: today,
     endDate: '',
@@ -92,7 +92,7 @@ function PackForm({ onSubmit, onClose, isLoading }: PackFormProps) {
     });
   };
 
-  const creditOptions = [5, 10, 15, 20, 30].map((n) => ({
+  const creditOptions = [4, 8, 12, 16, 20].map((n) => ({
     value: String(n),
     label: `${n} ${formData.serviceType === 'walk' ? 'passeios' : 'diárias'}`,
   }));
@@ -193,7 +193,7 @@ function EditPackForm({ pack, onSubmit, onClose, isLoading }: EditPackFormProps)
     });
   };
 
-  const creditOptions = [5, 10, 15, 20, 30].map((n) => ({
+  const creditOptions = [4, 8, 12, 16, 20].map((n) => ({
     value: String(n),
     label: `${n} ${formData.serviceType === 'walk' ? 'passeios' : 'diárias'}`,
   }));
@@ -252,14 +252,15 @@ function EditPackForm({ pack, onSubmit, onClose, isLoading }: EditPackFormProps)
 // Pack Card Component
 interface PackCardProps {
   pack: Pack;
-  onUpdatePayment: (status: PaymentStatus, paidAmount?: number) => void;
+  onUpdatePayment: (status: PaymentStatus, paidAmount?: number, paymentDate?: Date) => void;
+  onMarkAsPaid: () => void;
   onEdit: () => void;
   onDelete: () => void;
   onClosePack: () => void;
   onPartialPayment: () => void;
 }
 
-function PackCard({ pack, onUpdatePayment, onEdit, onDelete, onClosePack, onPartialPayment }: PackCardProps) {
+function PackCard({ pack, onUpdatePayment, onMarkAsPaid, onEdit, onDelete, onClosePack, onPartialPayment }: PackCardProps) {
   const [showMenu, setShowMenu] = useState(false);
   const remaining = pack.totalCredits - pack.usedCredits;
   const percentage = (pack.usedCredits / pack.totalCredits) * 100;
@@ -291,6 +292,7 @@ function PackCard({ pack, onUpdatePayment, onEdit, onDelete, onClosePack, onPart
           <Package className={`w-5 h-5 ${isCompleted ? 'text-gray-500' : 'text-emerald-400'}`} />
           <span className="font-semibold text-gray-100">
             {pack.serviceType === 'walk' ? 'Passeio' : 'Pet Sitter'}
+            {pack.cycleNumber && <span className="text-gray-400 font-normal ml-1">• Ciclo {pack.cycleNumber}</span>}
           </span>
           {!pack.isActive && <Badge variant="default">Encerrado</Badge>}
         </div>
@@ -387,7 +389,7 @@ function PackCard({ pack, onUpdatePayment, onEdit, onDelete, onClosePack, onPart
             <Button
               size="sm"
               variant="secondary"
-              onClick={() => onUpdatePayment('paid')}
+              onClick={onMarkAsPaid}
               className="flex-1"
             >
               Marcar Pago
@@ -457,33 +459,66 @@ function PackCard({ pack, onUpdatePayment, onEdit, onDelete, onClosePack, onPart
 // Operations History Component
 function OperationsHistory({ clientId }: { clientId: string }) {
   const { operations, loading: operationsLoading } = useOperations(undefined, clientId, 20);
-  const { allServices, loading: servicesLoading } = useSchedule();
+  const { allServices, loading: servicesLoading, revertServiceStatus } = useSchedule();
+  const [reverting, setReverting] = useState<string | null>(null);
+  const [confirmRevert, setConfirmRevert] = useState<{ service: ScheduledServiceWithClient; itemType: 'completed' | 'not_done' } | null>(null);
 
-  // Filter services that are not_done for this client
-  const notDoneServices = allServices
-    .filter((s) => s.clientId === clientId && s.status === 'not_done')
-    .slice(0, 20);
+  // Filter services for this client (not_done and completed)
+  const clientServices = allServices
+    .filter((s) => s.clientId === clientId && (s.status === 'not_done' || s.status === 'completed'))
+    .slice(0, 40);
 
-  // Combine operations and not_done services into a unified list
+  const notDoneServices = clientServices.filter((s) => s.status === 'not_done');
+  const completedServices = clientServices.filter((s) => s.status === 'completed');
+
+  // Create a map of operations by date+type for weight lookup
+  const operationsMap = new Map<string, number>();
+  operations.forEach((op) => {
+    const key = `${op.date.toDate().toDateString()}-${op.type}`;
+    operationsMap.set(key, op.weight);
+  });
+
+  // Combine completed services and not_done services into a unified list
+  // Using services as the source of truth since they have the correct scheduled date
   type HistoryItem = 
-    | { type: 'completed'; date: Date; operationType: OperationType; weight: number; id: string }
-    | { type: 'not_done'; date: Date; operationType: OperationType; id: string };
+    | { type: 'completed'; date: Date; operationType: OperationType; weight: number; id: string; service: ScheduledServiceWithClient }
+    | { type: 'not_done'; date: Date; operationType: OperationType; id: string; service: ScheduledServiceWithClient };
 
   const historyItems: HistoryItem[] = [
-    ...operations.map((op) => ({
-      type: 'completed' as const,
-      date: op.date.toDate(),
-      operationType: op.type,
-      weight: op.weight,
-      id: op.id,
-    })),
+    ...completedServices.map((s) => {
+      const serviceDate = s.scheduledDate.toDate();
+      const key = `${serviceDate.toDateString()}-${s.type}`;
+      const weight = operationsMap.get(key) || 1; // Default to 1 if not found
+      return {
+        type: 'completed' as const,
+        date: serviceDate,
+        operationType: s.type,
+        weight,
+        id: s.id,
+        service: s,
+      };
+    }),
     ...notDoneServices.map((s) => ({
       type: 'not_done' as const,
       date: s.scheduledDate.toDate(),
       operationType: s.type,
       id: s.id,
+      service: s,
     })),
   ].sort((a, b) => b.date.getTime() - a.date.getTime());
+
+  const handleRevert = async () => {
+    if (!confirmRevert) return;
+    setReverting(confirmRevert.service.id);
+    try {
+      await revertServiceStatus(confirmRevert.service);
+      setConfirmRevert(null);
+    } catch (err) {
+      alert(err instanceof Error ? err.message : 'Erro ao reverter status');
+    } finally {
+      setReverting(null);
+    }
+  };
 
   const loading = operationsLoading || servicesLoading;
 
@@ -505,7 +540,7 @@ function OperationsHistory({ clientId }: { clientId: string }) {
     );
   }
 
-  const completedCount = operations.length;
+  const completedCount = completedServices.length;
   const notDoneCount = notDoneServices.length;
 
   return (
@@ -541,11 +576,55 @@ function OperationsHistory({ clientId }: { clientId: string }) {
             </p>
             <p className="text-xs text-gray-400">{formatOperationType(item.operationType)}</p>
           </div>
-          {item.type === 'completed' && (
-            <span className="text-sm text-gray-400">-{item.weight} crédito{item.weight > 1 ? 's' : ''}</span>
-          )}
+          <div className="flex items-center gap-2">
+            {item.type === 'completed' && (
+              <span className="text-sm text-gray-400">-{item.weight} crédito{item.weight > 1 ? 's' : ''}</span>
+            )}
+            <button
+              onClick={() => setConfirmRevert({ service: item.service, itemType: item.type })}
+              disabled={reverting === item.service.id}
+              className="p-1.5 rounded-lg hover:bg-gray-700 transition-colors text-gray-400 hover:text-gray-200"
+              title="Desfazer"
+            >
+              <RotateCcw className={`w-4 h-4 ${reverting === item.service.id ? 'animate-spin' : ''}`} />
+            </button>
+          </div>
         </div>
       ))}
+
+      {/* Modal de confirmação para reverter */}
+      <Drawer
+        isOpen={confirmRevert !== null}
+        onClose={() => setConfirmRevert(null)}
+        title="Desfazer Status"
+      >
+        <div className="space-y-4">
+          <p className="text-gray-300">
+            Tem certeza que deseja desfazer o status deste serviço?
+          </p>
+          {confirmRevert?.itemType === 'completed' && (
+            <p className="text-sm text-amber-400 bg-amber-900/30 border border-amber-700 rounded-lg p-3">
+              ⚠️ Os créditos usados serão restaurados ao pacote.
+            </p>
+          )}
+          <div className="flex gap-3">
+            <Button
+              variant="secondary"
+              onClick={() => setConfirmRevert(null)}
+              className="flex-1"
+            >
+              Cancelar
+            </Button>
+            <Button
+              onClick={handleRevert}
+              isLoading={reverting !== null}
+              className="flex-1"
+            >
+              Confirmar
+            </Button>
+          </div>
+        </div>
+      </Drawer>
     </div>
   );
 }
@@ -884,6 +963,56 @@ function PartialPaymentForm({ pack, onSubmit, onClose, isLoading }: PartialPayme
   );
 }
 
+// Payment Date Form Component
+interface PaymentDateFormProps {
+  pack: Pack;
+  onSubmit: (paymentDate: Date) => Promise<void>;
+  onClose: () => void;
+  isLoading: boolean;
+}
+
+function PaymentDateForm({ pack, onSubmit, onClose, isLoading }: PaymentDateFormProps) {
+  const today = new Date().toISOString().split('T')[0];
+  const [paymentDate, setPaymentDate] = useState(today);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    // Parse date parts to avoid timezone issues
+    const [year, month, day] = paymentDate.split('-').map(Number);
+    const date = new Date(year, month - 1, day, 12, 0, 0); // Meio-dia para evitar problemas de timezone
+    await onSubmit(date);
+  };
+
+  return (
+    <form onSubmit={handleSubmit} className="space-y-4">
+      <div className="text-center mb-4">
+        <p className="text-gray-300">
+          Confirmar pagamento de <strong className="text-emerald-400">{formatCurrency(pack.packageValue)}</strong>
+        </p>
+        <p className="text-sm text-gray-400 mt-1">
+          {pack.serviceType === 'walk' ? 'Passeio' : 'Pet Sitter'} - Ciclo {pack.cycleNumber || 1}
+        </p>
+      </div>
+      
+      <Input
+        label="Data do Pagamento"
+        type="date"
+        value={paymentDate}
+        onChange={(e) => setPaymentDate(e.target.value)}
+      />
+
+      <div className="flex gap-3 pt-4">
+        <Button type="button" variant="secondary" onClick={onClose} className="flex-1">
+          Cancelar
+        </Button>
+        <Button type="submit" isLoading={isLoading} className="flex-1">
+          Confirmar Pagamento
+        </Button>
+      </div>
+    </form>
+  );
+}
+
 // Main Client Detail Component
 export function ClientDetail({ client, onBack, onEdit, onArchive }: ClientDetailProps) {
   const { packs, loading, addPack, updatePaymentStatus, updatePack, deletePack, closePack } = useClientPacks(client.id);
@@ -891,6 +1020,7 @@ export function ClientDetail({ client, onBack, onEdit, onArchive }: ClientDetail
   const [editingPack, setEditingPack] = useState<Pack | null>(null);
   const [deletingPackId, setDeletingPackId] = useState<string | null>(null);
   const [partialPaymentPack, setPartialPaymentPack] = useState<Pack | null>(null);
+  const [paymentDatePack, setPaymentDatePack] = useState<Pack | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isExportOpen, setIsExportOpen] = useState(false);
 
@@ -957,11 +1087,24 @@ export function ClientDetail({ client, onBack, onEdit, onArchive }: ClientDetail
     }
   };
 
-  const handleUpdatePaymentStatus = async (packId: string, status: PaymentStatus, paidAmount?: number) => {
+  const handleUpdatePaymentStatus = async (packId: string, status: PaymentStatus, paidAmount?: number, paymentDate?: Date) => {
     try {
-      await updatePaymentStatus(packId, status, paidAmount);
+      await updatePaymentStatus(packId, status, paidAmount, paymentDate);
     } catch (err) {
       alert(err instanceof Error ? err.message : 'Erro ao atualizar pagamento');
+    }
+  };
+
+  const handleMarkAsPaid = async (paymentDate: Date) => {
+    if (!paymentDatePack) return;
+    setIsSubmitting(true);
+    try {
+      await updatePaymentStatus(paymentDatePack.id, 'paid', undefined, paymentDate);
+      setPaymentDatePack(null);
+    } catch (err) {
+      alert(err instanceof Error ? err.message : 'Erro ao marcar como pago');
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -1055,9 +1198,9 @@ export function ClientDetail({ client, onBack, onEdit, onArchive }: ClientDetail
         {/* Packs Section */}
         <section>
           <div className="flex items-center justify-between mb-3">
-            <h2 className="text-lg font-bold text-gray-100">Pacotes</h2>
+            <h2 className="text-lg font-bold text-gray-100">Ciclos</h2>
             <Button size="sm" onClick={() => setIsPackFormOpen(true)} leftIcon={<Plus className="w-4 h-4" />}>
-              Novo Pacote
+              Novo ciclo
             </Button>
           </div>
 
@@ -1081,7 +1224,8 @@ export function ClientDetail({ client, onBack, onEdit, onArchive }: ClientDetail
                 <PackCard
                   key={pack.id}
                   pack={pack}
-                  onUpdatePayment={(status) => handleUpdatePaymentStatus(pack.id, status)}
+                  onUpdatePayment={(status, paidAmount, paymentDate) => handleUpdatePaymentStatus(pack.id, status, paidAmount, paymentDate)}
+                  onMarkAsPaid={() => setPaymentDatePack(pack)}
                   onEdit={() => setEditingPack(pack)}
                   onDelete={() => setDeletingPackId(pack.id)}
                   onClosePack={() => handleClosePack(pack.id)}
@@ -1188,6 +1332,23 @@ export function ClientDetail({ client, onBack, onEdit, onArchive }: ClientDetail
             pack={partialPaymentPack}
             onSubmit={handlePartialPayment}
             onClose={() => setPartialPaymentPack(null)}
+            isLoading={isSubmitting}
+          />
+        )}
+      </Drawer>
+
+      {/* Payment Date Drawer */}
+      <Drawer
+        isOpen={!!paymentDatePack}
+        onClose={() => setPaymentDatePack(null)}
+        title="Confirmar Pagamento"
+        subtitle={paymentDatePack ? `${paymentDatePack.serviceType === 'walk' ? 'Passeio' : 'Pet Sitter'} - Ciclo ${paymentDatePack.cycleNumber || 1}` : undefined}
+      >
+        {paymentDatePack && (
+          <PaymentDateForm
+            pack={paymentDatePack}
+            onSubmit={handleMarkAsPaid}
+            onClose={() => setPaymentDatePack(null)}
             isLoading={isSubmitting}
           />
         )}

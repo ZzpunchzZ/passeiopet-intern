@@ -9,6 +9,7 @@ import {
   updateDoc,
   deleteDoc,
   Timestamp,
+  getDocs,
 } from 'firebase/firestore';
 import { db, COLLECTIONS } from '../lib/firebase';
 import type { Pack, PaymentStatus, ServiceType } from '../types';
@@ -36,7 +37,7 @@ interface UseClientPacksReturn {
   loading: boolean;
   error: string | null;
   addPack: (data: AddPackData) => Promise<string>;
-  updatePaymentStatus: (id: string, paymentStatus: PaymentStatus, paidAmount?: number) => Promise<void>;
+  updatePaymentStatus: (id: string, paymentStatus: PaymentStatus, paidAmount?: number, paymentDate?: Date) => Promise<void>;
   updatePack: (id: string, data: UpdatePackData) => Promise<void>;
   deletePack: (id: string) => Promise<void>;
   closePack: (id: string) => Promise<void>;
@@ -94,6 +95,23 @@ export function useClientPacks(clientId: string | null): UseClientPacksReturn {
   const addPack = async (data: AddPackData): Promise<string> => {
     console.log('Adding pack with data:', data);
     try {
+      // Buscar o maior cycleNumber existente para este cliente
+      const existingPacksQuery = query(
+        collection(db, COLLECTIONS.PACKS),
+        where('clientId', '==', data.clientId)
+      );
+      const existingPacks = await getDocs(existingPacksQuery);
+      
+      // Calcular o próximo número de ciclo
+      let maxCycleNumber = 0;
+      existingPacks.docs.forEach((docSnap) => {
+        const packData = docSnap.data();
+        if (packData.cycleNumber && packData.cycleNumber > maxCycleNumber) {
+          maxCycleNumber = packData.cycleNumber;
+        }
+      });
+      const nextCycleNumber = maxCycleNumber > 0 ? maxCycleNumber + 1 : existingPacks.size + 1;
+
       const docRef = await addDoc(collection(db, COLLECTIONS.PACKS), {
         clientId: data.clientId,
         serviceType: data.serviceType,
@@ -104,8 +122,9 @@ export function useClientPacks(clientId: string | null): UseClientPacksReturn {
         endDate: data.endDate ? Timestamp.fromDate(data.endDate) : null,
         paymentStatus: 'pending' as PaymentStatus,
         isActive: true,
+        cycleNumber: nextCycleNumber,
       });
-      console.log('Pack created with ID:', docRef.id);
+      console.log('Pack created with ID:', docRef.id, 'Cycle:', nextCycleNumber);
       return docRef.id;
     } catch (err) {
       console.error('Error adding pack:', err);
@@ -113,14 +132,14 @@ export function useClientPacks(clientId: string | null): UseClientPacksReturn {
     }
   };
 
-  const updatePaymentStatus = async (id: string, paymentStatus: PaymentStatus, paidAmount?: number): Promise<void> => {
+  const updatePaymentStatus = async (id: string, paymentStatus: PaymentStatus, paidAmount?: number, paymentDate?: Date): Promise<void> => {
     try {
       const packRef = doc(db, COLLECTIONS.PACKS, id);
       const updateData: Record<string, unknown> = { paymentStatus };
       
       // If marking as paid, also set the payment date
       if (paymentStatus === 'paid') {
-        updateData.paymentDate = Timestamp.now();
+        updateData.paymentDate = paymentDate ? Timestamp.fromDate(paymentDate) : Timestamp.now();
         updateData.paidAmount = null; // Clear partial amount when fully paid
       } else if (paymentStatus === 'partial') {
         // For partial payment, store the amount paid

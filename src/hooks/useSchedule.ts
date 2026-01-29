@@ -43,6 +43,7 @@ interface UseScheduleReturn {
   completeService: (service: ScheduledServiceWithClient) => Promise<void>;
   markAsNotDone: (id: string) => Promise<void>;
   cancelService: (id: string) => Promise<void>;
+  revertServiceStatus: (service: ScheduledServiceWithClient) => Promise<void>;
 }
 
 // Helper to get start and end of a day
@@ -219,7 +220,7 @@ export function useSchedule(): UseScheduleReturn {
             const operationData: Omit<Operation, 'id'> = {
               packId: service.packId!,
               clientId: service.clientId,
-              date: Timestamp.now(),
+              date: service.scheduledDate, // Usar a data agendada, não a data atual
               type: service.type,
               weight,
             };
@@ -265,6 +266,70 @@ export function useSchedule(): UseScheduleReturn {
     await updateScheduledService(id, { status: 'cancelled' as ScheduleStatus });
   };
 
+  // Revert a service status (desfazer completed ou not_done)
+  const revertServiceStatus = useCallback(
+    async (service: ScheduledServiceWithClient): Promise<void> => {
+      const weight = OPERATION_WEIGHTS[service.type];
+
+      try {
+        // Se o serviço foi completado e tem pacote, precisamos reverter os créditos
+        if (service.status === 'completed' && service.packId) {
+          await runTransaction(db, async (transaction) => {
+            const packRef = doc(db, COLLECTIONS.PACKS, service.packId!);
+            const packDoc = await transaction.get(packRef);
+
+            if (!packDoc.exists()) {
+              throw new Error('Pacote não encontrado');
+            }
+
+            const packData = packDoc.data() as Pack;
+            const newUsedCredits = Math.max(0, packData.usedCredits - weight);
+
+            // Buscar e deletar a operação correspondente
+            // A operação tem a mesma data que o scheduledDate do serviço
+            const operationsRef = collection(db, COLLECTIONS.OPERATIONS);
+            const { getDocs, query, where } = await import('firebase/firestore');
+            const operationsQuery = query(
+              operationsRef,
+              where('packId', '==', service.packId),
+              where('clientId', '==', service.clientId),
+              where('date', '==', service.scheduledDate)
+            );
+            const operationsSnapshot = await getDocs(operationsQuery);
+            
+            // Deletar a operação encontrada
+            operationsSnapshot.docs.forEach((opDoc) => {
+              transaction.delete(opDoc.ref);
+            });
+
+            // Restaurar créditos do pacote
+            transaction.update(packRef, {
+              usedCredits: newUsedCredits,
+              isActive: true, // Reativar o pacote se estava inativo
+            });
+
+            // Reverter status do serviço para scheduled
+            const serviceRef = doc(db, COLLECTIONS.SCHEDULED_SERVICES, service.id);
+            transaction.update(serviceRef, {
+              status: 'scheduled' as ScheduleStatus,
+              completedAt: null,
+            });
+          });
+        } else {
+          // Serviço sem pacote ou marcado como not_done - apenas reverter o status
+          await updateScheduledService(service.id, {
+            status: 'scheduled' as ScheduleStatus,
+            completedAt: null,
+          });
+        }
+      } catch (err) {
+        console.error('Error reverting service status:', err);
+        throw err;
+      }
+    },
+    []
+  );
+
   return {
     todayServices,
     allServices,
@@ -276,6 +341,7 @@ export function useSchedule(): UseScheduleReturn {
     completeService,
     markAsNotDone,
     cancelService,
+    revertServiceStatus,
   };
 }
 

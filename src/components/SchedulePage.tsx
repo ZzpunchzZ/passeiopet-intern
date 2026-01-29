@@ -8,16 +8,15 @@ import {
   ChevronRight,
   Footprints,
   Sun,
-  MapPin,
-  ExternalLink,
   Repeat,
+  ExternalLink,
 } from 'lucide-react';
 import { useSchedule } from '../hooks/useSchedule';
 import { useClients } from '../hooks/useClients';
 import { useClientPacks } from '../hooks/useClientPacks';
 import { Drawer, ConfirmDialog } from './ui/Modal';
 import { Button, Select, Input, Card, Skeleton } from './ui/FormElements';
-import { PetAvatar } from './ui/PetAvatar';
+
 import type { ScheduledServiceWithClient, OperationType, Client } from '../types';
 
 // Operation type options
@@ -514,20 +513,6 @@ function ServiceCard({ service, onComplete, onNotDone, isSubmitting }: ServiceCa
           {/* Owner name */}
           <p className="text-sm text-gray-400">{service.client.ownerName}</p>
           
-          {/* Address - clickable to Google Maps */}
-          {service.client.address && (
-            <a
-              href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(service.client.address)}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-1.5 text-xs text-blue-400 hover:text-blue-300 transition-colors"
-            >
-              <MapPin className="w-3 h-3 flex-shrink-0" />
-              <span className="truncate underline underline-offset-2">{service.client.address}</span>
-              <ExternalLink className="w-3 h-3 flex-shrink-0" />
-            </a>
-          )}
-          
           {/* Notes */}
           {service.notes && (
             <p className="text-xs text-orange-400/90 truncate italic">📝 {service.notes}</p>
@@ -698,7 +683,6 @@ export function SchedulePage() {
 
   // Separate pending and completed
   const pendingServices = servicesForDate.filter((s) => s.status === 'scheduled');
-  const completedServices = servicesForDate.filter((s) => s.status === 'completed');
 
   // Build slots view with all services (pending and completed) or empty
   const slotsView = TIME_SLOTS.map((slot) => {

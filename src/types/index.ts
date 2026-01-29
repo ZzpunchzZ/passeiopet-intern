@@ -40,6 +40,7 @@ export interface Pack {
   paymentStatus: PaymentStatus;
   paymentDate?: Timestamp | null; // Data em que o pagamento foi realizado
   isActive: boolean; // Se o ciclo está ativo ou encerrado
+  cycleNumber?: number; // Número sequencial do ciclo para o cliente
 }
 
 export interface Operation {
